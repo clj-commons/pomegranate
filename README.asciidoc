@@ -68,6 +68,6 @@ or would like to contribute patches.
 
 == License
 
-Copyright © 2011 Chas Emerick
+Copyright © 2011 http://cemerick.com[Chas Emerick]
 
 Licensed under the EPL. (See the file epl-v10.html.)
