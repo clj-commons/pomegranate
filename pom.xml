@@ -1,0 +1,99 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.cemerick</groupId>
+    <artifactId>pomegranate</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>pomegranate</name>
+    <description></description>
+    <url>http://github.com/cemerick/pomegranate</url>
+
+    <parent>
+        <groupId>org.clojure</groupId>
+        <artifactId>pom.contrib</artifactId>
+        <version>0.0.20</version>
+    </parent>
+
+    <developers>
+        <developer>
+            <name>Chas Emerick</name>
+            <url>http://cemerick.com</url>
+            <email>cemerick@snowtide.com</email>
+            <timezone>-5</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:cemerick/pomegranate.git</connection>
+        <developerConnection>scm:git:git@github.com:cemerick/pomegranate.git</developerConnection>
+        <url>git@github.com:cemerick/pomegranate.git</url>
+    </scm>
+
+    <properties>
+        <clojure.version>1.2.0</clojure.version>
+
+        <aetherVersion>1.13</aetherVersion>
+        <mavenVersion>3.0.3</mavenVersion>
+        <wagonVersion>1.0-beta-7</wagonVersion>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.sonatype.aether</groupId>
+            <artifactId>aether-api</artifactId>
+            <version>${aetherVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sonatype.aether</groupId>
+            <artifactId>aether-util</artifactId>
+            <version>${aetherVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sonatype.aether</groupId>
+            <artifactId>aether-impl</artifactId>
+            <version>${aetherVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sonatype.aether</groupId>
+            <artifactId>aether-connector-file</artifactId>
+            <version>${aetherVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sonatype.aether</groupId>
+            <artifactId>aether-connector-asynchttpclient</artifactId>
+            <version>${aetherVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.sonatype.aether</groupId>
+            <artifactId>aether-connector-wagon</artifactId>
+            <version>${aetherVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-aether-provider</artifactId>
+            <version>${mavenVersion}</version>
+        </dependency>
+        
+        <!-- wagons for dependency resolution -->
+        <dependency>
+            <groupId>org.apache.maven.wagon</groupId>
+            <artifactId>wagon-http-lightweight</artifactId>
+            <version>${wagonVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.wagon</groupId>
+            <artifactId>wagon-ssh</artifactId>
+            <version>${wagonVersion}</version>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/clojure</directory>
+            </resource>
+        </resources>
+    </build>
+
+</project>

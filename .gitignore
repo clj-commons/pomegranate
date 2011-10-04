@@ -1,0 +1,15 @@
+# emacs + vi backup files
+*~
+.*.sw*
+
+# various IDE junk
+*.ipr
+*.iml
+*.iws
+.project
+.classpath
+.settings
+
+target
+classes
+it-repo

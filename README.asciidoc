@@ -1,0 +1,73 @@
+= Pomegranate
+
+http://github.com/cemerick/pomegranate[Pomegranate] is a library that provides:
+
+1. A very, _very_ incomplete wrapper for Sonatype https://github.com/sonatype/sonatype-aether[Aether] — really, just dependency resolution at this point.
+2. A re-implementation of http://clojure.github.com/clojure/clojure.core-api.html#clojure.core/add-classpath[`add-classpath`] (deprecated in Clojure core) that:
+
+    * is a little more comprehensive than core's `add-classpath` — it should work as expected in more circumstances, and
+    * optionally uses Aether to add a Maven artifact (and all of its transitive dependencies) to your Clojure runtime's classpath dynamically.
+
+Insofar as most useful Clojure libraries have dependencies, any reasonable implementation of the `add-classpath` concept must seamlessly support resolving those dependencies IMO.
+
+== Status
+
+This library is functionally completely new; literally, v0.0.1.  There will be changes.  In any case, it's obviously incomplete.
+
+== "Installation"
+
+Pomegranate is available in Maven central.  Add it to your Leiningen/Cake `project.clj`:
+
+----
+[com.cemerick/pomegranate "0.0.1"]
+----
+
+or to your Maven project's `pom.xml`:
+
+----
+<dependency>
+  <groupId>com.cemerick</groupId>
+  <artifactId>pomegranate</artifactId>
+  <version>0.0.1</version>
+</dependency>
+----
+
+== Usage
+
+Just to set a stage: you're at the REPL, and you've got some useful data that you'd like to munge and analyze in various ways.  Maybe it's something you've generated locally, maybe it's data on a production machine and you're logged in via http://github.com/clojure/tools.nrepl[nREPL].  In any case, you'd like to work with the data, but realize that you don't have the libraries you need do what you want.  Your choices at this point are:
+
+1. Dump the data to disk via `pr` (assuming it's just Clojure data structures!), and start up a new Clojure process with the appropriate libraries on the classpath. This can really suck if the data is in a remote environment.
+2. There is no second choice.  You _could_ use `add-claspath`, but the library you want has 12 bajillion dependencies, and there's no way you're going to hunt them down manually.
+
+Let's say we want to use [Incanter] (which has roughly 40 dependencies — close enough to a 12 bajillion for all practical purposes!):
+
+----
+=> (require '(incanter core stats charts))
+#<CompilerException java.io.FileNotFoundException:
+  Could not locate incanter/core__init.class or incanter/core.clj on classpath:  (NO_SOURCE_FILE:0)>
+----
+
+Looks bleak. Assuming you've got Pomegranate on your classpath already, you can do this though:
+
+----
+=> (add-dependencies '[[incanter "1.2.3"]]
+                     :repositories {"clojars" "http://clojars.org/repo"})
+nil
+=> (require '(incanter core stats charts))
+nil
+----
+
+Now you can analyze and chart away, Incanter having been added to your runtime.  Note that `add-dependencies` may crunch along for a while — it may need to download dependencies, so you're waiting on the network.  All resolved dependencies are stored in the default local repository (`~/.m2/repository`), and if they are found there, then they are not downloaded.
+
+The arguments to `add-dependencies` look like Leiningen-style notation, and they are.  But support for that is definitely incomplete, e.g. repositories may only be string URLs (no authentication, mirroring, etc. is supported).
+
+== Need Help?
+
+Ping `cemerick` on freenode irc or twitter if you have questions
+or would like to contribute patches.
+
+== License
+
+Copyright © 2011 Chas Emerick
+
+Licensed under the EPL. (See the file epl-v10.html.)
