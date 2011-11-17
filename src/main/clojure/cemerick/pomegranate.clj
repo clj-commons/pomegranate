@@ -55,5 +55,9 @@
    (add-dependencies '[[incanter \"1.2.3\"]]
                      :repositories {\"clojars\" \"http://clojars.org/repo\"})"
   [coordinates & {:keys [repositories]}]
-  (doseq [artifact-file (aether/resolve-dependencies :coordinates coordinates :repositories repositories)]
+  (doseq [artifact-file (aether/resolve-dependencies
+                         :coordinates coordinates
+                         :repositories
+                         (merge {"central" "http://repo1.maven.org/maven2/"}
+                                repositories))]
     (add-classpath artifact-file)))

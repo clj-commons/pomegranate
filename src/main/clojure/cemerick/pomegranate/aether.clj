@@ -56,8 +56,7 @@
         session (repository-session system)
         collect-request (CollectRequest. (map #(Dependency. (DefaultArtifact. (coordinate-string %)) "compile") coordinates)
                                          nil
-                                         (map repository (merge {"central" "http://repo1.maven.org/maven2/"}
-                                                                repositories)))
+                                         (map repository repositories))
         dep-node (.getRoot (.collectDependencies system session collect-request))
         dep-req (DependencyRequest. dep-node nil)
         nodelist-gen (PreorderNodeListGenerator.)]
