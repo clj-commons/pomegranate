@@ -62,3 +62,12 @@
                     (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.pom"))
     (let [files (.list (io/file "tmp" "local-repo" "group" "artifact" "1.0.0"))]
       (is (= 3 (count files))))))
+
+
+(comment
+  "tests needed for:
+  
+  repository authentication
+  repository policies
+  dependency options (scope/optional)
+  exclusion options (classifier/extension)")
