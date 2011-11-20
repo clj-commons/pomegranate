@@ -34,3 +34,11 @@
                  tmp-remote-repo)
   (let [files (.list (io/file "tmp" "remote-repo" "group" "artifact" "1.0.0"))]
     (is (= 6 (count files)))))
+
+(deftest install-jar
+  (binding [aether/*local-repo* (io/file "tmp" "local-repo")]
+    (aether/install '[group/artifact "1.0.0"]
+                    (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
+                    (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.pom"))
+    (let [files (.list (io/file "tmp" "local-repo" "group" "artifact" "1.0.0"))]
+      (is (= 3 (count files))))))

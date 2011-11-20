@@ -14,7 +14,8 @@
            (org.sonatype.aether.resolution DependencyRequest)
            (org.sonatype.aether.util.graph PreorderNodeListGenerator)
            (org.sonatype.aether.util.artifact DefaultArtifact SubArtifact)
-           (org.sonatype.aether.deployment DeployRequest)))
+           (org.sonatype.aether.deployment DeployRequest)
+           (org.sonatype.aether.installation InstallRequest)))
 
 (def ^{:dynamic true} *local-repo*
   (io/file (System/getProperty "user.home") ".m2" "repository"))
@@ -52,7 +53,7 @@
 (defn repository
   ([[id config]] (repository id config))
   ([id config]
-    (RemoteRepository. id "default" config)))
+     (RemoteRepository. id "default" config)))
 
 (defn deploy
   [coordinates jar-file pom-file repo]
@@ -66,6 +67,18 @@
                       (.addArtifact jar-artifact)
                       (.addArtifact pom-artifact)
                       (.setRepository (repository repo))))))
+
+(defn install
+  [coordinates jar-file pom-file]
+  (let [system (repository-system)
+        session (repository-session system)
+        jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
+                         (.setFile jar-file))
+        pom-artifact (-> (SubArtifact. jar-artifact "" "pom")
+                         (.setFile pom-file))]
+      (.install system session (doto (InstallRequest.)
+                      (.addArtifact jar-artifact)
+                      (.addArtifact pom-artifact)))))
 
 (defn resolve-dependencies
   [& {:keys [repositories coordinates]}]
