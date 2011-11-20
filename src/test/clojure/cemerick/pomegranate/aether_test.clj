@@ -27,6 +27,26 @@
       (is (= (.getAbsolutePath (io/file "tmp" "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
              (.getAbsolutePath (first files)))))))
 
+(deftest resolve-deps-with-deps
+  (binding [aether/*local-repo* (io/file "tmp" "local-repo")]
+    (let [files (aether/resolve-dependencies :repositories test-repo
+                                             :coordinates
+                                             '[[demo/demo2 "1.0.0"]])]
+      (is (= 2 (count files)))
+      (is (= (.getAbsolutePath (io/file "tmp" "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+             (.getAbsolutePath (first files))))
+      (is (= (.getAbsolutePath (io/file "tmp" "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
+             (.getAbsolutePath (first (rest files))))))))
+
+(deftest resolve-deps-with-exclusions
+  (binding [aether/*local-repo* (io/file "tmp" "local-repo")]
+    (let [files (aether/resolve-dependencies :repositories test-repo
+                                             :coordinates
+                                             '[[demo/demo2 "1.0.0" :exclusions [demo/demo]]])]
+      (is (= 1 (count files)))
+      (is (= (.getAbsolutePath (io/file "tmp" "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
+             (.getAbsolutePath (first files)))))))
+
 (deftest deploy-jar
   (aether/deploy '[group/artifact "1.0.0"]
                  (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")

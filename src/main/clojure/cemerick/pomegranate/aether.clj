@@ -9,7 +9,7 @@
            
            org.apache.maven.repository.internal.MavenRepositorySystemSession
            (org.sonatype.aether.repository LocalRepository RemoteRepository)
-           (org.sonatype.aether.graph Dependency)
+           (org.sonatype.aether.graph Dependency Exclusion)
            (org.sonatype.aether.collection CollectRequest)
            (org.sonatype.aether.resolution DependencyRequest)
            (org.sonatype.aether.util.graph PreorderNodeListGenerator)
@@ -42,9 +42,13 @@
                                                               .getAbsolutePath
                                                               LocalRepository.)))))
 
+(defn- group
+  [group-artifact]
+  (or (namespace group-artifact) (name group-artifact)))
+
 (defn- coordinate-string
   ([group-artifact version]
-    (let [group (or (namespace group-artifact) (name group-artifact))
+    (let [group (group group-artifact)
           artifact (name group-artifact)]
       (str group \: artifact \: version)))
   ([[group-artifact version]]
@@ -54,6 +58,25 @@
   ([[id config]] (repository id config))
   ([id config]
      (RemoteRepository. id "default" config)))
+
+(defn exclusion
+  [group-artifact & opts]
+  (let [group (group group-artifact)
+        artifact (name group-artifact)
+        opts-map (apply hash-map opts)]
+    (Exclusion.
+     group
+     artifact
+     (:classifier opts-map "*")
+     (:extension opts-map "*"))))
+
+(defn dependency
+  [[group-artifact version & opts]]
+  (let [opts-map (apply hash-map opts)]
+    (Dependency. (DefaultArtifact. (coordinate-string [group-artifact version]))
+                 (:scope opts-map "compile")
+                 (boolean (:optional? opts-map false))
+                 (map exclusion (:exclusions opts-map)))))
 
 (defn deploy
   [coordinates jar-file pom-file repo]
@@ -84,7 +107,7 @@
   [& {:keys [repositories coordinates]}]
   (let [system (repository-system)
         session (repository-session system)
-        collect-request (CollectRequest. (map #(Dependency. (DefaultArtifact. (coordinate-string %)) "compile") coordinates)
+        collect-request (CollectRequest. (map dependency coordinates)
                                          nil
                                          (map repository repositories))
         dep-node (.getRoot (.collectDependencies system session collect-request))
