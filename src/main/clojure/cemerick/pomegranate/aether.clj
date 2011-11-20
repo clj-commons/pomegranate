@@ -133,7 +133,7 @@ Settings:
     (.deploy system session (doto (DeployRequest.)
                       (.addArtifact jar-artifact)
                       (.addArtifact pom-artifact)
-                      (.setRepository (repository repo))))))
+                      (.setRepository (first (map repository repo)))))))
 
 (defn install
   [coordinates jar-file pom-file]

@@ -4,7 +4,7 @@
   (:use [clojure.test]))
 
 (def test-repo {"test-repo" "file://test-repo"})
-(def tmp-remote-repo ["tmp-remote-repo" (str "file://" (.getAbsolutePath (io/file "tmp" "remote-repo")))])
+(def tmp-remote-repo {"tmp-remote-repo" (str "file://" (.getAbsolutePath (io/file "tmp" "remote-repo")))})
 
 (defn delete-recursive
   [dir]
