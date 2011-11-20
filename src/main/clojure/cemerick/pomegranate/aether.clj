@@ -15,6 +15,9 @@
            (org.sonatype.aether.util.graph PreorderNodeListGenerator)
            (org.sonatype.aether.util.artifact DefaultArtifact)))
 
+(def ^{:dynamic true} *local-repo*
+  (io/file (System/getProperty "user.home") ".m2" "repository"))
+
 (deftype HttpProvider []
   WagonProvider
   (release [_ wagon])
@@ -33,7 +36,7 @@
   [repository-system]
   (doto (MavenRepositorySystemSession.)
     (.setLocalRepositoryManager (.newLocalRepositoryManager repository-system
-                                                            (-> (io/file (System/getProperty "user.home") ".m2" "repository")
+                                                            (-> *local-repo*
                                                               .getAbsolutePath
                                                               LocalRepository.)))))
 
