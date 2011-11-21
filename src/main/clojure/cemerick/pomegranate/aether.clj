@@ -83,7 +83,7 @@ Settings:
      (let [settings-map (if (string? settings)
                           {:url settings}
                           settings)
-           repo (RemoteRepository. (:id settings-map)
+           repo (RemoteRepository. id
                                    (:type settings-map "default")
                                    (str (:url settings-map)))]
        (set-policies repo settings-map)
