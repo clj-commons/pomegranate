@@ -69,7 +69,7 @@
       (when private-key-file (.setPrivateKeyFile auth private-key-file))
       auth)))
 
-(defn- repository
+(defn- make-repository
   "Create an Aether ArtifactRepository object.
 Settings:
 :url URL of the repository
@@ -123,7 +123,7 @@ Settings:
                  (map exclusion (:exclusions opts-map)))))
 
 (defn deploy
-  [coordinates jar-file pom-file repo]
+  [& {:keys [coordinates jar-file pom-file repository]}]
   (let [system (repository-system)
         session (repository-session system)
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
@@ -133,10 +133,10 @@ Settings:
     (.deploy system session (doto (DeployRequest.)
                       (.addArtifact jar-artifact)
                       (.addArtifact pom-artifact)
-                      (.setRepository (first (map repository repo)))))))
+                      (.setRepository (first (map make-repository repository)))))))
 
 (defn install
-  [coordinates jar-file pom-file]
+  [& {:keys [coordinates jar-file pom-file]}]
   (let [system (repository-system)
         session (repository-session system)
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
@@ -153,7 +153,7 @@ Settings:
         session (repository-session system)
         collect-request (CollectRequest. (map dependency coordinates)
                                          nil
-                                         (map repository repositories))
+                                         (map make-repository repositories))
         dep-node (.getRoot (.collectDependencies system session collect-request))
         dep-req (DependencyRequest. dep-node nil)
         nodelist-gen (PreorderNodeListGenerator.)]
