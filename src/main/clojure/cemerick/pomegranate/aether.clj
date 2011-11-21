@@ -103,7 +103,7 @@ Settings:
   ([[group-artifact version]]
     (coordinate-string group-artifact version)))
 
-(defn exclusion
+(defn- exclusion
   [group-artifact & opts]
   (let [group (group group-artifact)
         artifact (name group-artifact)
@@ -114,7 +114,7 @@ Settings:
      (:classifier opts-map "*")
      (:extension opts-map "*"))))
 
-(defn dependency
+(defn- dependency
   [[group-artifact version & opts]]
   (let [opts-map (apply hash-map opts)]
     (Dependency. (DefaultArtifact. (coordinate-string [group-artifact version]))
