@@ -15,6 +15,7 @@
            (org.sonatype.aether.deployment DeployRequest)
            (org.sonatype.aether.installation InstallRequest)))
 
+;Dynamic so that tests can use a different place
 (def ^{:dynamic true} *local-repo*
   (io/file (System/getProperty "user.home") ".m2" "repository"))
 
@@ -70,26 +71,17 @@
       auth)))
 
 (defn- make-repository
-  "Create an Aether ArtifactRepository object.
-Settings:
-:url URL of the repository
-:snapshots contains snapshots versions?
-:releases contains release versions?
-:username username to log in with
-:password password to log in with
-:passphrase
-:private-key-file"
-  ([[id settings]]
-     (let [settings-map (if (string? settings)
-                          {:url settings}
-                          settings)
-           repo (RemoteRepository. id
-                                   (:type settings-map "default")
-                                   (str (:url settings-map)))]
-       (set-policies repo settings-map)
-       (when-let [auth (authentication settings-map)]
-         (.setAuthentication repo auth))
-       repo)))
+  [[id settings]]
+  (let [settings-map (if (string? settings)
+                       {:url settings}
+                       settings)
+        repo (RemoteRepository. id
+                                (:type settings-map "default")
+                                (str (:url settings-map)))]
+    (set-policies repo settings-map)
+    (when-let [auth (authentication settings-map)]
+      (.setAuthentication repo auth))
+    repo))
 
 (defn- group
   [group-artifact]
@@ -123,6 +115,25 @@ Settings:
                  (map exclusion (:exclusions opts-map)))))
 
 (defn deploy
+    "Deploy the jar-file kwarg using the pom-file kwarg and coordinates kwarg to the repository kwarg.
+
+coordinates - [group/name \"version\"]
+
+jar-file - a file pointing to the jar
+
+pom-file - a file pointing to the pom
+
+repository - {name url} | {name settings}
+settings:
+  :url - URL of the repository
+  :snapshots - use snapshots versions? (default true)
+  :releases - use release versions? (default true)
+  :username - username to log in with
+  :password - password to log in with
+  :passphrase - passphrase to log in wth
+  :private-key-file - private key file to log in with
+  :update - :daily (default) | :always | :never
+  :checksum - :fail (default) | :ignore | :warn"
   [& {:keys [coordinates jar-file pom-file repository]}]
   (let [system (repository-system)
         session (repository-session system)
@@ -136,6 +147,13 @@ Settings:
                       (.setRepository (first (map make-repository repository)))))))
 
 (defn install
+  "Install the jar-file kwarg using the pom-file kwarg and coordinates kwarg.
+
+coordinates - [group/name \"version\"]
+
+jar-file - a file pointing to the jar
+
+pom-file - a file pointing to the pom"
   [& {:keys [coordinates jar-file pom-file]}]
   (let [system (repository-system)
         session (repository-session system)
@@ -148,6 +166,28 @@ Settings:
                       (.addArtifact pom-artifact)))))
 
 (defn resolve-dependencies
+  "Resolve dependencies for the coordinates kwarg, using repositories from the repositories kwarg.
+
+coordinates - [[group/name \"version\" & settings] ..]
+settings:
+  :scope - the maven scope for the dependency (default \"compile\")
+  :optional? - is the dependency optional? (default \"false\")
+  :exclusions - which sub-dependencies to skip : [group/name & settings]
+    settings:
+      :classifier (default \"*\")
+      :extension  (default \"*\")
+
+repositories - {name url ..} | {name settings ..}
+settings:
+  :url - URL of the repository
+  :snapshots - use snapshots versions? (default true)
+  :releases - use release versions? (default true)
+  :username - username to log in with
+  :password - password to log in with
+  :passphrase - passphrase to log in wth
+  :private-key-file - private key file to log in with
+  :update - :daily (default) | :always | :never
+  :checksum - :fail (default) | :ignore | :warn"
   [& {:keys [repositories coordinates]}]
   (let [system (repository-system)
         session (repository-session system)

@@ -20,6 +20,10 @@
 
 (use-fixtures :each clear-tmp)
 
+(defn file-path-eq [file1 file2]
+  (= (.getAbsolutePath file1)
+     (.getAbsolutePath file2)))
+
 (deftest resolve-deps
   (binding [aether/*local-repo* (io/file tmp-dir "local-repo")]
     (let [files (aether/resolve-dependencies :repositories test-repo
@@ -28,10 +32,6 @@
       (is (= 1 (count files)))
       (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
              (.getAbsolutePath (first files)))))))
-
-(defn file-path-eq [file1 file2]
-  (= (.getAbsolutePath file1)
-     (.getAbsolutePath file2)))
 
 (deftest resolve-deps-with-deps
   (binding [aether/*local-repo* (io/file tmp-dir "local-repo")]
