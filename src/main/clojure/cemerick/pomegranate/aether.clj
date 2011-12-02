@@ -177,7 +177,7 @@ settings:
       :classifier (default \"*\")
       :extension  (default \"*\")
 
-repositories - {name url ..} | {name settings ..}
+repositories - {name url ..} | {name settings ..} (default {\"central\" \"http://repo1.maven.org/maven2/\"}
 settings:
   :url - URL of the repository
   :snapshots - use snapshots versions? (default true)
@@ -189,7 +189,9 @@ settings:
   :update - :daily (default) | :always | :never
   :checksum - :fail (default) | :ignore | :warn"
   [& {:keys [repositories coordinates]}]
-  (let [system (repository-system)
+  (let [repositories (or repositories
+                         {"central" "http://repo1.maven.org/maven2/"})
+        system (repository-system)
         session (repository-session system)
         collect-request (CollectRequest. (map dependency coordinates)
                                          nil
