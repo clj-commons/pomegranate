@@ -19,16 +19,24 @@
   (-> klass (.getDeclaredMethod (name method-name)
                                 (into-array Class params))
     (doto (.setAccessible true))
-    (.invoke obj (into-array Object args))))  
+    (.invoke obj (into-array Object args))))
 
-(def ^{:private true} dynamic-classloaders #{DynamicClassLoader URLClassLoader})
+(defprotocol AddURL
+  "Ability to dynamically add urls to classloaders"
+  (add-url [this url] "add the url to the classpath"))
+
+(extend-type DynamicClassLoader AddURL
+  (add-url [this url] (.addURL this url)))
+
+(extend-type URLClassLoader AddURL
+  (add-url [this url] (call-method URLClassLoader 'addURL [URL] this url)))
 
 (defn- find-eldest-classloader
   ([]
     (find-eldest-classloader (clojure.lang.RT/baseLoader)))
   ([tip]
-    (when (dynamic-classloaders (class tip))
-      (or (find-eldest-classloader (.getParent tip)) tip))))
+     (when (satisfies? AddURL tip)
+       (or (find-eldest-classloader (.getParent tip)) tip))))
 
 (defn add-classpath
   "A corollary to the (deprecated) `add-classpath` in clojure.core. This implementation
@@ -36,12 +44,7 @@
    to add that path to the current thread's context classloader (by default)."
   ([jar-or-dir classloader]
     (let [url (.toURL (io/file jar-or-dir))]
-      (cond
-        (instance? DynamicClassLoader classloader) (.addURL classloader url)
-        (instance? URLClassLoader) (call-method URLClassLoader 'addURL [URL] classloader url)
-        :else (throw (IllegalStateException.
-                       (format "Thread context classloader is of type %s; needs to be a DynamicClassLoader or URLClassLoader"
-                               (class classloader)))))))
+      (add-url classloader url)))
   ([jar-or-dir]
     (if-let [classloader (find-eldest-classloader)]
       (add-classpath jar-or-dir classloader)
