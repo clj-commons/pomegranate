@@ -49,11 +49,13 @@
 
 (defn add-dependencies
   "Resolves a set of dependencies, optionally against a set of additional Maven repositories
-   (Maven central is always added in automatically), and adds all of the resulting artifacts
+   (Maven central is used when blank), and adds all of the resulting artifacts
    (jar files) to the current runtime via `cemerick.pomegranate/add-classpath`.  e.g.
 
    (add-dependencies '[[incanter \"1.2.3\"]]
                      :repositories {\"clojars\" \"http://clojars.org/repo\"})"
   [coordinates & {:keys [repositories]}]
-  (doseq [artifact-file (aether/resolve-dependencies :coordinates coordinates :repositories repositories)]
+  (doseq [artifact-file (aether/resolve-dependencies
+                         :coordinates coordinates
+                         :repositories repositories)]
     (add-classpath artifact-file)))
