@@ -3,6 +3,7 @@
   (:import (org.apache.maven.repository.internal DefaultServiceLocator MavenRepositorySystemSession)
            (org.apache.maven.wagon.providers.http LightweightHttpWagon)
            (org.sonatype.aether RepositorySystem)
+           (org.sonatype.aether.artifact Artifact)
            (org.sonatype.aether.connector.file FileRepositoryConnectorFactory)
            (org.sonatype.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
            (org.sonatype.aether.spi.connector RepositoryConnectorFactory)
@@ -89,32 +90,75 @@
   [group-artifact]
   (or (namespace group-artifact) (name group-artifact)))
 
+
 (defn- coordinate-string
-  ([group-artifact version]
-    (let [group (group group-artifact)
-          artifact (name group-artifact)]
-      (str group \: artifact \: version)))
-  ([[group-artifact version]]
-    (coordinate-string group-artifact version)))
+  "Produces a coordinate string with a format of
+   <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>>
+   given a lein-style dependency spec.  :extension defaults to jar."
+  [[group-artifact version & {:keys [classifier extension] :or {extension "jar"}}]]
+  (->> [(group group-artifact) (name group-artifact) extension classifier version]
+    (remove nil?)
+    (interpose \:)
+    (apply str)))
 
 (defn- exclusion
-  [group-artifact & opts]
-  (let [group (group group-artifact)
-        artifact (name group-artifact)
-        opts-map (apply hash-map opts)]
-    (Exclusion.
-     group
-     artifact
-     (:classifier opts-map "*")
-     (:extension opts-map "*"))))
+  [[group-artifact & {:as opts}]]
+  (Exclusion.
+    (group group-artifact)
+    (name group-artifact)
+    (:classifier opts "*")
+    (:extension opts "*")))
 
 (defn- dependency
-  [[group-artifact version & opts]]
-  (let [opts-map (apply hash-map opts)]
-    (Dependency. (DefaultArtifact. (coordinate-string [group-artifact version]))
-                 (:scope opts-map "compile")
-                 (boolean (:optional? opts-map false))
-                 (map exclusion (:exclusions opts-map)))))
+  [[group-artifact version & {:keys [scope optional exclusions]
+                              :as opts
+                              :or {scope "compile"
+                                   optional false}}
+    :as dep-spec]]
+  (Dependency. (DefaultArtifact. (coordinate-string dep-spec))
+               scope
+               optional
+               (map (comp exclusion #(if (symbol? %) [%] %)) exclusions)))
+
+(defn- dep-spec*
+  "Base function for producing lein-style dependency spec vectors for dependencies
+   and exclusions."
+  [{:keys [groupId artifactId version classifier extension scope optional exclusions]
+    :or {version nil
+         scope "compile"
+         optional false
+         exclusions nil}}]
+  (let [group-artifact (apply symbol (if (= groupId artifactId)
+                                       [artifactId]
+                                       [groupId artifactId]))]
+    (vec (concat [group-artifact]
+                 (when version [version])
+                 (when (and (seq classifier)
+                            (not= "*" classifier))
+                   [:classifier classifier])
+                 (when (and (seq extension)
+                            (not (#{"*" "jar"} extension)))
+                   [:extension extension])
+                 (when optional [:optional true])
+                 (when (not= scope "compile")
+                   [:scope scope])
+                 (when (seq exclusions)
+                   [:exclusions (vec (map exclusion-spec exclusions))])))))
+
+(defn- exclusion-spec
+  "Given an Aether Exclusion, returns a lein-style exclusion vector with the
+   :exclusion in its metadata."
+  [^Exclusion ex]
+  (with-meta (-> ex bean dep-spec*) {:exclusion ex}))
+
+(defn- dep-spec
+  "Given an Aether Dependency, returns a lein-style dependency vector with the
+   :dependency and its corresponding artifact's :file in its metadata."
+  [^Dependency dep]
+  (let [artifact (.getArtifact dep)]
+    (-> (merge (bean dep) (bean artifact))
+      dep-spec*
+      (with-meta {:dependency dep :file (.getFile artifact)}))))
 
 (defn deploy
     "Deploy the jar-file kwarg using the pom-file kwarg and coordinates kwarg to the repository kwarg.

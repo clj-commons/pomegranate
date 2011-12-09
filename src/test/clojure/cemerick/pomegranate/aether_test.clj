@@ -3,6 +3,12 @@
             [clojure.java.io :as io])
   (:use [clojure.test]))
 
+(deftest dependency-roundtripping
+  (are [x] (= x (#'aether/dep-spec (#'aether/dependency x)))
+       '[ring "1.0.0" :optional true]
+       '[com.cemerick/pomegranate "0.0.1" :classifier "sources"]
+       '[demo/demo2 "1.0.0" :exclusions [[demo :classifier "jdk5"]]]))
+
 (def tmp-dir (System/getProperty "java.io.tmpdir"))
 
 (def test-repo {"test-repo" "file://test-repo"})
