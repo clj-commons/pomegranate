@@ -2,7 +2,7 @@
 
 http://github.com/cemerick/pomegranate[Pomegranate] is a library that provides:
 
-1. A very, _very_ incomplete wrapper for Sonatype https://github.com/sonatype/sonatype-aether[Aether] — really, just dependency resolution at this point.
+1. A wrapper for Sonatype https://github.com/sonatype/sonatype-aether[Aether].
 2. A re-implementation of http://clojure.github.com/clojure/clojure.core-api.html#clojure.core/add-classpath[`add-classpath`] (deprecated in Clojure core) that:
 
     * is a little more comprehensive than core's `add-classpath` — it should work as expected in more circumstances, and
@@ -10,16 +10,12 @@ http://github.com/cemerick/pomegranate[Pomegranate] is a library that provides:
 
 Insofar as most useful Clojure libraries have dependencies, any reasonable implementation of the `add-classpath` concept must seamlessly support resolving those dependencies IMO.
 
-== Status
-
-This library is functionally completely new; literally, v0.0.1.  There will be changes.  In any case, it's obviously incomplete.
-
 == "Installation"
 
-Pomegranate is available in Maven central.  Add it to your Leiningen/Cake `project.clj`:
+Pomegranate is available in Maven central.  Add it to your Leiningen `project.clj`:
 
 ----
-[com.cemerick/pomegranate "0.0.1"]
+[com.cemerick/pomegranate "0.0.2"]
 ----
 
 or to your Maven project's `pom.xml`:
@@ -28,11 +24,31 @@ or to your Maven project's `pom.xml`:
 <dependency>
   <groupId>com.cemerick</groupId>
   <artifactId>pomegranate</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
 </dependency>
 ----
 
-== Usage
+== Status of Aether support
+
+This library is functionally completely new.  There will be changes.
+
+That said:
+
+==== Very functional
+
+* dependency resolution
+** common dependency graph/hierarchy manipulation ops
+* local installation
+* remote deployment
+* repository authentication for all of the above
+
+==== Not there yet
+
+* support for different dependency resolution profiles/contexts (e.g. resolving `test` or `provided` dependencies, etc)
+* tests; there's halfway decent coverage, but nowhere near the kind of comprehensive combinatorial testing that maven dependency resolution demands
+* Leiningen v2-style plugin for common dependency-related tasks (e.g. dependency-list, dependency-tree, etc)
+
+== `add-classpath` usage
 
 Just to set a stage: you're at the REPL, and you've got some useful data that you'd like to munge and analyze in various ways.  Maybe it's something you've generated locally, maybe it's data on a production machine and you're logged in via http://github.com/clojure/tools.nrepl[nREPL].  In any case, you'd like to work with the data, but realize that you don't have the libraries you need do what you want.  Your choices at this point are:
 
@@ -51,7 +67,8 @@ Looks bleak. Assuming you've got Pomegranate on your classpath already, you can 
 
 ----
 => (add-dependencies '[[incanter "1.2.3"]]
-                     :repositories {"clojars" "http://clojars.org/repo"})
+                        :repositories (merge cemerick.pomegranate.aether/maven-central
+                                             {"clojars" "http://clojars.org/repo"}))
 nil
 => (require '(incanter core stats charts))
 nil
@@ -59,7 +76,7 @@ nil
 
 Now you can analyze and chart away, Incanter having been added to your runtime.  Note that `add-dependencies` may crunch along for a while — it may need to download dependencies, so you're waiting on the network.  All resolved dependencies are stored in the default local repository (`~/.m2/repository`), and if they are found there, then they are not downloaded.
 
-The arguments to `add-dependencies` look like Leiningen-style notation, and they are.  But support for that is definitely incomplete, e.g. repositories may only be string URLs (no authentication, mirroring, etc. is supported).
+The arguments to `add-dependencies` look like Leiningen-style notation, and they are.
 
 == Need Help?
 
