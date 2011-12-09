@@ -222,7 +222,8 @@ pom-file - a file pointing to the pom"
                            (->> (.getChildren n) 
                              (map #(.getDependency %))
                              (map dep-spec)
-                             set)))) 
+                             set))
+                g)) 
             {}
             (tree-seq (constantly true)
                       #(seq (.getChildren %))
