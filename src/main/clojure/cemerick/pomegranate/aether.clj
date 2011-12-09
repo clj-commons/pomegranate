@@ -19,6 +19,8 @@
 (def ^{:dynamic true} *local-repo*
   (io/file (System/getProperty "user.home") ".m2" "repository"))
 
+(def maven-central {"central" "http://repo1.maven.org/maven2/"})
+
 (deftype HttpProvider []
   WagonProvider
   (release [_ wagon])
@@ -189,8 +191,7 @@ settings:
   :update - :daily (default) | :always | :never
   :checksum - :fail (default) | :ignore | :warn"
   [& {:keys [repositories coordinates]}]
-  (let [repositories (or repositories
-                         {"central" "http://repo1.maven.org/maven2/"})
+  (let [repositories (or repositories maven-central)
         system (repository-system)
         session (repository-session system)
         collect-request (CollectRequest. (map dependency coordinates)
