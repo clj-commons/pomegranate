@@ -1,5 +1,6 @@
 (ns cemerick.pomegranate.aether
-  (:require [clojure.java.io :as io])
+  (:require [clojure.java.io :as io]
+            clojure.set)
   (:import (org.apache.maven.repository.internal DefaultServiceLocator MavenRepositorySystemSession)
            (org.apache.maven.wagon.providers.http LightweightHttpWagon)
            (org.sonatype.aether RepositorySystem)
@@ -8,9 +9,9 @@
            (org.sonatype.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
            (org.sonatype.aether.spi.connector RepositoryConnectorFactory)
            (org.sonatype.aether.repository ArtifactRepository Authentication RepositoryPolicy LocalRepository RemoteRepository)
-           (org.sonatype.aether.graph Dependency Exclusion)
+           (org.sonatype.aether.graph Dependency Exclusion DependencyNode)
            (org.sonatype.aether.collection CollectRequest)
-           (org.sonatype.aether.resolution DependencyRequest)
+           (org.sonatype.aether.resolution DependencyRequest ArtifactRequest)
            (org.sonatype.aether.util.graph PreorderNodeListGenerator)
            (org.sonatype.aether.util.artifact DefaultArtifact SubArtifact)
            (org.sonatype.aether.deployment DeployRequest)
@@ -120,6 +121,23 @@
                optional
                (map (comp exclusion #(if (symbol? %) [%] %)) exclusions)))
 
+(declare dep-spec*)
+
+(defn- exclusion-spec
+  "Given an Aether Exclusion, returns a lein-style exclusion vector with the
+   :exclusion in its metadata."
+  [^Exclusion ex]
+  (with-meta (-> ex bean dep-spec*) {:exclusion ex}))
+
+(defn- dep-spec
+  "Given an Aether Dependency, returns a lein-style dependency vector with the
+   :dependency and its corresponding artifact's :file in its metadata."
+  [^Dependency dep]
+  (let [artifact (.getArtifact dep)]
+    (-> (merge (bean dep) (bean artifact))
+      dep-spec*
+      (with-meta {:dependency dep :file (.getFile artifact)}))))
+
 (defn- dep-spec*
   "Base function for producing lein-style dependency spec vectors for dependencies
    and exclusions."
@@ -144,22 +162,6 @@
                    [:scope scope])
                  (when (seq exclusions)
                    [:exclusions (vec (map exclusion-spec exclusions))])))))
-
-(defn- exclusion-spec
-  "Given an Aether Exclusion, returns a lein-style exclusion vector with the
-   :exclusion in its metadata."
-  [^Exclusion ex]
-  (with-meta (-> ex bean dep-spec*) {:exclusion ex}))
-
-(defn- dep-spec
-  "Given an Aether Dependency, returns a lein-style dependency vector with the
-   :dependency and its corresponding artifact's :file in its metadata."
-  [^Dependency dep]
-  (let [artifact (.getArtifact dep)]
-    (-> (merge (bean dep) (bean artifact))
-      dep-spec*
-      (with-meta {:dependency dep :file (.getFile artifact)}))))
-
 (defn deploy
     "Deploy the jar-file kwarg using the pom-file kwarg and coordinates kwarg to the repository kwarg.
 
@@ -211,8 +213,26 @@ pom-file - a file pointing to the pom"
                       (.addArtifact jar-artifact)
                       (.addArtifact pom-artifact)))))
 
+(defn- dependency-graph
+  ([node]
+    (reduce (fn [g ^DependencyNode n]
+              (if-let [dep (.getDependency n)]
+                (update-in g [(dep-spec dep)]
+                           clojure.set/union
+                           (->> (.getChildren n) 
+                             (map #(.getDependency %))
+                             (map dep-spec)
+                             set)))) 
+            {}
+            (tree-seq (constantly true)
+                      #(seq (.getChildren %))
+                      node))))
+
 (defn resolve-dependencies
-  "Resolve dependencies for the coordinates kwarg, using repositories from the repositories kwarg.
+  "Collects dependencies for the coordinates kwarg, using repositories from the repositories kwarg.
+   Returns a graph of dependencies; each dependency's metadata contains the source Aether
+   Dependency object, and the dependency's :file on disk.  Retrieval of dependencies
+   can be disabled by providing `:retrieve false` as a kwarg.
 
 coordinates - [[group/name \"version\" & settings] ..]
 settings:
@@ -234,16 +254,33 @@ settings:
   :private-key-file - private key file to log in with
   :update - :daily (default) | :always | :never
   :checksum - :fail (default) | :ignore | :warn"
-  [& {:keys [repositories coordinates]}]
+  [& {:keys [repositories coordinates retrieve] :or {retrieve true}}]
   (let [repositories (or repositories maven-central)
         system (repository-system)
         session (repository-session system)
-        collect-request (CollectRequest. (map dependency coordinates)
+        deps (map dependency coordinates)
+        collect-request (CollectRequest. deps
                                          nil
                                          (map make-repository repositories))
-        dep-node (.getRoot (.collectDependencies system session collect-request))
-        dep-req (DependencyRequest. dep-node nil)
-        nodelist-gen (PreorderNodeListGenerator.)]
-    (.resolveDependencies system session dep-req)
-    (.accept dep-node nodelist-gen)
-    (set (.getFiles nodelist-gen))))
+        _ (.setRequestContext collect-request "runtime")
+        result (if retrieve
+                 (.resolveDependencies system session (DependencyRequest. collect-request nil))
+                 (.collectDependencies system session collect-request))]
+    (-> result .getRoot dependency-graph)))
+
+(defn dependency-files
+  "Given a dependency graph obtained from `resolve-dependencies`, returns a seq of
+   files from the dependencies' metadata."
+  [graph]
+  (->> graph keys (map (comp :file meta)) (remove nil?)))
+
+(defn dependency-hierarchy
+  "Returns a dependency hierarchy based on the provided dependency graph
+   (as returned by `resolve-dependencies`) and the coordinates that should
+   be the root(s) of the hierarchy.  Siblings are sorted alphabetically."
+  [root-coordinates dep-graph]
+  (let [hierarchy (for [[root children] (select-keys dep-graph (map (comp dep-spec dependency) root-coordinates))]
+                    [root (dependency-hierarchy children dep-graph)])]
+    (when (seq hierarchy)
+      (into (sorted-map-by #(apply compare (map coordinate-string %&))) hierarchy))))
+

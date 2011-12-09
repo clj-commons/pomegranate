@@ -82,7 +82,7 @@
     If :repositories are provided, then you must merge in the `maven-central` map from
     the cemerick.pomegranate.aether namespace yourself.)"
   [coordinates & {:keys [repositories]}]
-  (doseq [artifact-file (aether/resolve-dependencies
-                          :coordinates coordinates
-                          :repositories repositories)]
+  (doseq [artifact-file (aether/dependency-files (aether/resolve-dependencies
+                                                   :coordinates coordinates
+                                                   :repositories repositories))]
     (add-classpath artifact-file)))
