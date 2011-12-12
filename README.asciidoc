@@ -66,6 +66,8 @@ Let's say we want to use [Incanter] (which has roughly 40 dependencies — close
 Looks bleak. Assuming you've got Pomegranate on your classpath already, you can do this though:
 
 ----
+=> (use '[cemerick.pomegranate :only (add-dependencies)])
+nil
 => (add-dependencies '[[incanter "1.2.3"]]
                         :repositories (merge cemerick.pomegranate.aether/maven-central
                                              {"clojars" "http://clojars.org/repo"}))
