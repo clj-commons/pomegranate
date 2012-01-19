@@ -55,16 +55,16 @@
 
 (defn- policy
   [policy-settings enabled?]
-  (doto (RepositoryPolicy.)
-    (.setUpdatePolicy (update-policies (:update policy-settings :daily)))
-    (.setChecksumPolicy (checksum-policies (:checksum policy-settings :fail)))
-    (.setEnabled (boolean enabled?))))
+  (RepositoryPolicy.
+   (boolean enabled?)
+   (update-policies (:update policy-settings :daily))
+   (checksum-policies (:checksum policy-settings :fail))))
 
 (defn- set-policies
-  [repo {:keys [snapshots releases] :as settings}]
+  [repo settings]
   (doto repo
-      (.setPolicy true (policy snapshots (:snapshots settings true)))
-      (.setPolicy false (policy releases (:releases settings true)))))
+      (.setPolicy true (policy settings (:snapshots settings true)))
+      (.setPolicy false (policy settings (:releases settings true)))))
 
 (defn- authentication
   [{:keys [username password passphrase private-key-file] :as settings}]
