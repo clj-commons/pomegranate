@@ -27,7 +27,8 @@
   WagonProvider
   (release [_ wagon])
   (lookup [_ role-hint]
-          (and (= "http" role-hint) (LightweightHttpWagon.))))
+   (when (#{"http" "https"} role-hint)
+     (LightweightHttpWagon.))))
 
 (defn- repository-system
   []
