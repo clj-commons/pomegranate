@@ -69,11 +69,8 @@
 
 (defn- authentication
   [{:keys [username password passphrase private-key-file] :as settings}]
-  (let [auth (Authentication. username password)]
-    (when (seq settings)
-      (when passphrase (.setPassphrase auth passphrase))
-      (when private-key-file (.setPrivateKeyFile auth private-key-file))
-      auth)))
+  (when (seq settings)
+    (Authentication. username password private-key-file passphrase)))
 
 (defn- make-repository
   [[id settings]]
