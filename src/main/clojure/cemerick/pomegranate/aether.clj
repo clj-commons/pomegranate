@@ -85,81 +85,107 @@
       (.setAuthentication repo auth))
     repo))
 
-(defn- group
-  [group-artifact]
-  (or (namespace group-artifact) (name group-artifact)))
-
-
 (defn- coordinate-string
   "Produces a coordinate string with a format of
    <groupId>:<artifactId>[:<extension>[:<classifier>]]:<version>>
-   given a lein-style dependency spec.  :extension defaults to jar."
-  [[group-artifact version & {:keys [classifier extension] :or {extension "jar"}}]]
-  (->> [(group group-artifact) (name group-artifact) extension classifier version]
-    (remove nil?)
-    (interpose \:)
-    (apply str)))
+   given a dependency spec.  :extension defaults to jar."
+  [{:keys [group-id artifact-id version classifier extension]
+    :or {extension "jar"}}]
+  (->> [group-id artifact-id extension classifier version]
+       (remove nil?)
+       (interpose \:)
+       (apply str)))
 
 (defn- exclusion
-  [[group-artifact & {:as opts}]]
-  (Exclusion.
-    (group group-artifact)
-    (name group-artifact)
-    (:classifier opts "*")
-    (:extension opts "*")))
+  [{:keys [group-id artifact-id classifier extension]
+    :or {classifier "*" extension "*"}}]
+  (Exclusion. group-id artifact-id classifier extension))
 
 (defn- dependency
-  [[group-artifact version & {:keys [scope optional exclusions]
-                              :as opts
-                              :or {scope "compile"
-                                   optional false}}
-    :as dep-spec]]
+  [{:keys [group-id artifact-id version scope optional exclusions]
+    :or {scope "compile"
+         optional false}
+    :as dep-spec}]
   (Dependency. (DefaultArtifact. (coordinate-string dep-spec))
                scope
                optional
-               (map (comp exclusion #(if (symbol? %) [%] %)) exclusions)))
+               (map exclusion exclusions)))
 
-(declare dep-spec*)
+(def ^:private translated-keys
+  {:groupId :group-id
+   :artifactId :artifact-id
+   :baseVersion :base-version
+   :constitutesBuildPath :constitutes-build-path
+   :includesDependencies :includes-dependencies})
+
+(defn- discard-keys
+  [m v]
+  (apply dissoc m v))
+
+(defn- translate-keys
+  "Beans generate camel cased keys, which are translated here. Along with
+   removal of keys without sensible values."
+  [m]
+  (reduce
+   (fn [r k]
+     (let [v (get m k ::notfound)]
+       (if (= v ::notfound)
+         r
+         (assoc r (get translated-keys k) v))))
+   (discard-keys m (keys translated-keys))
+   (keys translated-keys)))
+
+(defn- sanitise-keys
+  "Beans generate camel cased keys, which are translated here. Along with
+   removal of keys without sensible values."
+  [m]
+  (letfn [(remove-asterisk [m k]
+            (let [v (get m k)]
+              (if (or (nil? v) (#{"" "*"} v)) (dissoc m k) m)))
+          (remove-empty [m k]
+            (let [v (get m k)]
+              (if (or (nil? v) (and (coll? v) (not (seq v)))) (dissoc m k) m)))
+          (remove-false [m k]
+            (if-let [v (get m k)] m (dissoc m k)))]
+    (->
+     m
+     translate-keys
+     (dissoc :class)
+     (remove-asterisk :extension)
+     (remove-asterisk :classifier)
+     (remove-empty :file)
+     (remove-empty :exclusions)
+     (remove-empty :properties)
+     (remove-false :snapshot)
+     (remove-false :optional)
+     (remove-false :includes-dependencies))))
 
 (defn- exclusion-spec
-  "Given an Aether Exclusion, returns a lein-style exclusion vector with the
+  "Given an Aether Exclusion, returns a map describing the exclusion with the
    :exclusion in its metadata."
   [^Exclusion ex]
-  (with-meta (-> ex bean dep-spec*) {:exclusion ex}))
+  (with-meta (-> ex bean sanitise-keys) {:exclusion ex}))
 
 (defn- dep-spec
-  "Given an Aether Dependency, returns a lein-style dependency vector with the
+  "Given an Aether Dependency, returns a map describing the dependency with the
    :dependency and its corresponding artifact's :file in its metadata."
   [^Dependency dep]
-  (let [artifact (.getArtifact dep)]
-    (-> (merge (bean dep) (bean artifact))
-      dep-spec*
-      (with-meta {:dependency dep :file (.getFile artifact)}))))
+  (let [artifact (.getArtifact dep)
+        t-f {"true" true "false" false}]
+    (-> (merge
+         (dissoc (bean dep) :artifact)
+         (dissoc (bean artifact) :file))
+        (update-in [:exclusions] #(map exclusion-spec %))
+        (update-in [:properties] (comp
+                                  sanitise-keys
+                                  #(zipmap
+                                    (map keyword (keys %))
+                                    (map (fn [v] (get t-f v v)) (vals %)))
+                                  (partial into {})))
+        (update-in [:file] #(when % (.getPath %)))
+        sanitise-keys
+        (with-meta {:dependency dep :file (.getFile artifact)}))))
 
-(defn- dep-spec*
-  "Base function for producing lein-style dependency spec vectors for dependencies
-   and exclusions."
-  [{:keys [groupId artifactId version classifier extension scope optional exclusions]
-    :or {version nil
-         scope "compile"
-         optional false
-         exclusions nil}}]
-  (let [group-artifact (apply symbol (if (= groupId artifactId)
-                                       [artifactId]
-                                       [groupId artifactId]))]
-    (vec (concat [group-artifact]
-                 (when version [version])
-                 (when (and (seq classifier)
-                            (not= "*" classifier))
-                   [:classifier classifier])
-                 (when (and (seq extension)
-                            (not (#{"*" "jar"} extension)))
-                   [:extension extension])
-                 (when optional [:optional true])
-                 (when (not= scope "compile")
-                   [:scope scope])
-                 (when (seq exclusions)
-                   [:exclusions (vec (map exclusion-spec exclusions))])))))
 (defn deploy
     "Deploy the jar-file kwarg using the pom-file kwarg and coordinates kwarg to the repository kwarg.
 
@@ -212,20 +238,20 @@ pom-file - a file pointing to the pom"
                       (.addArtifact pom-artifact)))))
 
 (defn- dependency-graph
-  ([node]
-    (reduce (fn [g ^DependencyNode n]
-              (if-let [dep (.getDependency n)]
-                (update-in g [(dep-spec dep)]
-                           clojure.set/union
-                           (->> (.getChildren n) 
-                             (map #(.getDependency %))
-                             (map dep-spec)
-                             set))
-                g)) 
-            {}
-            (tree-seq (constantly true)
-                      #(seq (.getChildren %))
-                      node))))
+  [node]
+  (reduce (fn [g ^DependencyNode n]
+            (if-let [dep (.getDependency n)]
+              (update-in g [(dep-spec dep)]
+                         clojure.set/union
+                         (->> (.getChildren n)
+                              (map #(.getDependency %))
+                              (map dep-spec)
+                              set))
+              g))
+          {}
+          (tree-seq (constantly true)
+                    #(seq (.getChildren %))
+                    node)))
 
 (defn resolve-dependencies
   "Collects dependencies for the coordinates kwarg, using repositories from the repositories kwarg.
@@ -257,7 +283,7 @@ settings:
   (let [repositories (or repositories maven-central)
         system (repository-system)
         session (repository-session system)
-        deps (map dependency coordinates)
+        deps (list* (map dependency coordinates))
         collect-request (CollectRequest. deps
                                          nil
                                          (map make-repository repositories))
@@ -278,8 +304,16 @@ settings:
    (as returned by `resolve-dependencies`) and the coordinates that should
    be the root(s) of the hierarchy.  Siblings are sorted alphabetically."
   [root-coordinates dep-graph]
-  (let [hierarchy (for [[root children] (select-keys dep-graph (map (comp dep-spec dependency) root-coordinates))]
+  (let [remove-resolve (fn remove-resolve [m]
+                         (zipmap
+                          (map #(dissoc % :properties) (keys m))
+                          (vals m)))
+        hierarchy (for [[root children]
+                        (select-keys
+                         (remove-resolve dep-graph)
+                         (map (comp dep-spec dependency) root-coordinates))]
                     [root (dependency-hierarchy children dep-graph)])]
     (when (seq hierarchy)
-      (into (sorted-map-by #(apply compare (map coordinate-string %&))) hierarchy))))
-
+      (into
+       (sorted-map-by #(apply compare (map coordinate-string %&)))
+       hierarchy))))
