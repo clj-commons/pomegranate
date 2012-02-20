@@ -23,7 +23,7 @@
 
 (defprotocol AddURL
   "Ability to dynamically add urls to classloaders"
-  (can-modify? [this] "Returns true if the given classloader should be modified.")
+  (can-modify? [this] "Returns true if the given classloader can be modified.")
   (add-url [this url] "add the url to the classpath"))
 
 (extend-type DynamicClassLoader
@@ -86,3 +86,13 @@
                                                    :coordinates coordinates
                                                    :repositories repositories))]
     (add-classpath artifact-file)))
+
+(defn get-classpath
+  "Returns the effective classpath (i.e. _not_ the value of
+   (System/getProperty \"java.class.path\") as a seq of URL strings."
+  []
+  (->> (classloader-hierarchy)
+    reverse
+    (mapcat #(when (instance? URLClassLoader %) (.getURLs %)))
+    (map str)))
+
