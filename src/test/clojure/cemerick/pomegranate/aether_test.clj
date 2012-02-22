@@ -27,12 +27,7 @@
   [f]
   (delete-recursive (io/file tmp-dir)) (f))
 
-(defn- bind-local-repo
-  [f]
-  (binding [aether/*local-repo* tmp-local-repo-dir]
-    (f)))
-
-(use-fixtures :each clear-tmp bind-local-repo)
+(use-fixtures :each clear-tmp)
 
 (defn file-path-eq [file1 file2]
   (= (.getAbsolutePath file1)
@@ -52,10 +47,10 @@
                      [javax.servlet/servlet-api "2.3"] nil,
                      [log4j "1.2.12"] nil,
                      [logkit "1.0.1"] nil}}]
-    (is (= graph (aether/resolve-dependencies :coordinates deps :retrieve false)))
+    (is (= graph (aether/resolve-dependencies :coordinates deps :retrieve false :local-repo tmp-local-repo-dir)))
     (is (not (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir))))
     
-    (doseq [[dep _] (aether/resolve-dependencies :coordinates deps)]
+    (doseq [[dep _] (aether/resolve-dependencies :coordinates deps :local-repo tmp-local-repo-dir)]
       (is (-> dep meta :file))
       (is (-> dep meta :file .exists)))
     (is (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir)))
@@ -64,16 +59,16 @@
 
 (deftest resolve-deps
   (let [deps (aether/resolve-dependencies :repositories test-repo
-                                          :coordinates
-                                          '[[demo/demo "1.0.0"]])]
+                                          :coordinates '[[demo/demo "1.0.0"]]
+                                          :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
            (.getAbsolutePath (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-deps
   (let [deps (aether/resolve-dependencies :repositories test-repo
-                                           :coordinates
-                                           '[[demo/demo2 "1.0.0"]])
+                                           :coordinates '[[demo/demo2 "1.0.0"]]
+                                           :local-repo tmp-local-repo-dir)
         files (aether/dependency-files deps)]
     (is (= 2 (count files)))
     (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
@@ -84,7 +79,8 @@
 (deftest resolve-deps-with-exclusions
   (let [deps (aether/resolve-dependencies :repositories test-repo
                                           :coordinates
-                                          '[[demo/demo2 "1.0.0" :exclusions [demo/demo]]])]
+                                          '[[demo/demo2 "1.0.0" :exclusions [demo/demo]]]
+                                          :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
            (.getAbsolutePath (first (aether/dependency-files deps)))))))
@@ -93,13 +89,15 @@
   (aether/deploy :coordinates '[group/artifact "1.0.0"]
                  :jar-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
                  :pom-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.pom")
-                 :repository tmp-remote-repo)
+                 :repository tmp-remote-repo
+                 :local-repo tmp-local-repo-dir)
   (is (= 6 (count (.list (io/file tmp-remote-repo-dir "group" "artifact" "1.0.0"))))))
 
 (deftest install-jar
   (aether/install :coordinates '[group/artifact "1.0.0"]
                   :jar-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
-                  :pom-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.pom"))
+                  :pom-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.pom")
+                  :local-repo tmp-local-repo-dir)
   (is (= 3 (count (.list (io/file tmp-local-repo-dir "group" "artifact" "1.0.0"))))))
 
 
