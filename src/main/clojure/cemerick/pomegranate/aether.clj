@@ -84,7 +84,7 @@
                  (print (case method :get "Retreiving" :put "Sending") name)
                  (when (pos? size) (print (format " (%sk)" (Math/round (double (max 1 (/ size 1024)))))))
                  (reset! need-newline? true))
-      :failed (when error (println (.getMessage error)))
+      (:corrupted :failed) (when error (println (.getMessage error)))
       nil)))))
 
 (defn- repository-system
