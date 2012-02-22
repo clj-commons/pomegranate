@@ -109,13 +109,14 @@
     :else (TransferListenerProxy. (fn [_]))))
 
 (defn- repository-session
-  [repository-system local-repo transfer-listener]
+  [repository-system local-repo offline? transfer-listener]
   (-> (MavenRepositorySystemSession.)
     (.setLocalRepositoryManager (.newLocalRepositoryManager repository-system
                                   (-> (io/file (or local-repo default-local-repo))
                                     .getAbsolutePath
                                     LocalRepository.)))
-        (.setTransferListener (construct-transfer-listener transfer-listener))))
+    (.setOffline (boolean offline?))
+    (.setTransferListener (construct-transfer-listener transfer-listener))))
 
 (def update-policies {:daily RepositoryPolicy/UPDATE_POLICY_DAILY
                       :always RepositoryPolicy/UPDATE_POLICY_ALWAYS
@@ -254,7 +255,7 @@ kwarg to the repository kwarg.
   :transfer-listener - same as provided to resolve-dependencies"
   [& {:keys [coordinates jar-file pom-file repository local-repo transfer-listener]}]
   (let [system (repository-system)
-        session (repository-session system local-repo transfer-listener)
+        session (repository-session system local-repo false transfer-listener)
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
                          (.setFile jar-file))
         pom-artifact (-> (SubArtifact. jar-artifact "" "pom")
@@ -274,7 +275,7 @@ kwarg to the repository kwarg.
   :transfer-listener - same as provided to resolve-dependencies"
   [& {:keys [coordinates jar-file pom-file local-repo transfer-listener]}]
   (let [system (repository-system)
-        session (repository-session system local-repo transfer-listener)
+        session (repository-session system local-repo false transfer-listener)
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
                          (.setFile jar-file))
         pom-artifact (-> (SubArtifact. jar-artifact "" "pom")
@@ -328,6 +329,7 @@ kwarg to the repository kwarg.
       :checksum - :fail (default) | :ignore | :warn
     
     :local-repo - path to the local repository (defaults to ~/.m2/repository)
+    :offline? - if true, no remote repositories will be contacted
     :transfer-listener - the transfer listener that will be notifed of dependency
       resolution and deployment events.
       Can be:
@@ -338,11 +340,11 @@ kwarg to the repository kwarg.
         - a function of one argument, which will be called with a map derived from
             each event.
         - an instance of org.sonatype.aether.transfer.TransferListener"
-  [& {:keys [repositories coordinates retrieve local-repo transfer-listener]
+  [& {:keys [repositories coordinates retrieve local-repo transfer-listener offline?]
       :or {retrieve true}}]
   (let [repositories (or repositories maven-central)
         system (repository-system)
-        session (repository-session system local-repo transfer-listener)
+        session (repository-session system local-repo offline? transfer-listener)
         deps (map dependency coordinates)
         collect-request (CollectRequest. deps
                                          nil
