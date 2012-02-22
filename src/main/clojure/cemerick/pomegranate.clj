@@ -21,13 +21,13 @@
     (doto (.setAccessible true))
     (.invoke obj (into-array Object args))))
 
-(defprotocol AddURL
+(defprotocol URLClasspath
   "Ability to dynamically add urls to classloaders"
   (can-modify? [this] "Returns true if the given classloader can be modified.")
   (add-url [this url] "add the url to the classpath"))
 
 (extend-type DynamicClassLoader
-  AddURL
+  URLClasspath
   (can-modify? [this] true)
   (add-url [this url] (.addURL this url)))
 
@@ -36,14 +36,14 @@
    :add-url (fn [this url]
               (call-method URLClassLoader 'addURL [URL] this url))})
 
-(extend URLClassLoader AddURL url-classloader-base)
+(extend URLClassLoader URLClasspath url-classloader-base)
 
 (defmacro when-resolves
   [sym & body]
   (when (resolve sym) `(do ~@body)))
 
 (when-resolves sun.misc.Launcher             
-  (extend sun.misc.Launcher$ExtClassLoader AddURL
+  (extend sun.misc.Launcher$ExtClassLoader URLClasspath
     (assoc url-classloader-base
            :can-modify? (constantly false))))
 
@@ -60,9 +60,9 @@
 
 (defn modifiable-classloader?
   "Returns true iff the given ClassLoader is of a type that satisfies
-   the AddURL protocol, and it can be modified."
+   the URLClasspath protocol, and it can be modified."
   [cl]
-  (and (satisfies? AddURL cl)
+  (and (satisfies? URLClasspath cl)
        (can-modify? cl)))
 
 (defn add-classpath
