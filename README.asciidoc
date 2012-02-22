@@ -2,7 +2,7 @@
 
 http://github.com/cemerick/pomegranate[Pomegranate] is a library that provides:
 
-1. A wrapper for Sonatype https://github.com/sonatype/sonatype-aether[Aether].
+1. A sane Clojure-oriented API for Sonatype https://github.com/sonatype/sonatype-aether[Aether].
 2. A re-implementation of http://clojure.github.com/clojure/clojure.core-api.html#clojure.core/add-classpath[`add-classpath`] (deprecated in Clojure core) that:
 
     * is a little more comprehensive than core's `add-classpath` — it should work as expected in more circumstances, and
@@ -15,7 +15,7 @@ Insofar as most useful Clojure libraries have dependencies, any reasonable imple
 Pomegranate is available in Maven central.  Add it to your Leiningen `project.clj`:
 
 ----
-[com.cemerick/pomegranate "0.0.6"]
+[com.cemerick/pomegranate "0.0.7"]
 ----
 
 or to your Maven project's `pom.xml`:
@@ -24,7 +24,7 @@ or to your Maven project's `pom.xml`:
 <dependency>
   <groupId>com.cemerick</groupId>
   <artifactId>pomegranate</artifactId>
-  <version>0.0.6</version>
+  <version>0.0.7</version>
 </dependency>
 ----
 
