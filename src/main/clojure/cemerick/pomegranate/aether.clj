@@ -3,7 +3,6 @@
             clojure.set
             [clojure.string :as str])
   (:import (org.apache.maven.repository.internal DefaultServiceLocator MavenRepositorySystemSession)
-           (org.apache.maven.wagon.providers.http LightweightHttpWagon)
            (org.sonatype.aether RepositorySystem)
            (org.sonatype.aether.transfer TransferListener)
            (org.sonatype.aether.artifact Artifact)
@@ -24,8 +23,16 @@
 
 (def maven-central {"central" "http://repo1.maven.org/maven2/"})
 
-(def ^{:private true} wagon-factories (atom {"http" #(org.apache.maven.wagon.providers.http.LightweightHttpWagon.)
-                                             "https" #(org.apache.maven.wagon.providers.http.LightweightHttpWagon.)}))
+; Using HttpWagon (which uses apache httpclient) because the "LightweightHttpWagon"
+; (which just uses JDK HTTP) reliably flakes if you attempt to resolve SNAPSHOT
+; artifacts from an HTTPS password-protected repository (like a nexus instance)
+; when other un-authenticated repositories are included in the resolution.
+; My theory is that the JDK HTTP impl is screwing up connection pooling or something,
+; and reusing the same connection handle for the HTTPS repo as it used for e.g.
+; central, without updating the authentication info.
+; In any case, HttpWagon is what Maven 3 uses, and it works.
+(def ^{:private true} wagon-factories (atom {"http" #(org.apache.maven.wagon.providers.http.HttpWagon.)
+                                             "https" #(org.apache.maven.wagon.providers.http.HttpWagon.)}))
 
 (defn register-wagon-factory!
   "Registers a new no-arg factory function for the given scheme.  The function must return
