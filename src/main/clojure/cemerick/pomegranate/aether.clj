@@ -100,7 +100,7 @@
     (instance? TransferListener transfer-listener) transfer-listener
     
     (= transfer-listener :stdout)
-    (TransferListenerProxy. (comp (default-listener-fn) transfer-event))
+    (TransferListenerProxy. (comp default-listener-fn transfer-event))
     
     (fn? transfer-listener)
     (TransferListenerProxy. (comp transfer-listener transfer-event))
