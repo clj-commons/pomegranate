@@ -79,22 +79,26 @@
         (throw (IllegalStateException. "Could not find a suitable classloader to modify from " classloaders))))))
 
 (defn add-dependencies
-  "Resolves a set of dependencies, optionally against a set of additional Maven repositories
-   (Maven central is used when blank), and adds all of the resulting artifacts
-   (jar files) to the current runtime via `cemerick.pomegranate/add-classpath`.  e.g.
+  "Resolves a set of dependencies, optionally against a set of additional Maven repositories,
+   and adds all of the resulting artifacts (jar files) to the current runtime via
+   `add-classpath`:
 
-   (add-dependencies '[[incanter \"1.2.3\"]]
+   (add-dependencies :coordinates '[[incanter \"1.2.3\"]]
                      :repositories (merge cemerick.pomegranate.aether/maven-central
-                                          {\"clojars\" \"http://clojars.org/repo\"}))
+                                     {\"clojars\" \"http://clojars.org/repo\"}))
 
-   (Note that Maven central is used as the sole repository if none are specified.
-    If :repositories are provided, then you must merge in the `maven-central` map from
-    the cemerick.pomegranate.aether namespace yourself.)"
-  [coordinates & {:keys [repositories]}]
-  (doseq [artifact-file (aether/dependency-files (aether/resolve-dependencies
-                                                   :coordinates coordinates
-                                                   :repositories repositories))]
-    (add-classpath artifact-file)))
+   Note that Maven central is used as the sole repository if none are specified.
+   If :repositories are provided, then you must merge in the `maven-central` map from
+   the cemerick.pomegranate.aether namespace yourself.
+
+   Acceptable arguments are the same as those for
+   `cemerick.pomegranate.aether/resolve-dependencies`; returns the dependency graph
+   returned from that function."
+  [& args]
+  (let [deps (apply aether/resolve-dependencies args)]
+    (doseq [artifact-file (aether/dependency-files deps)]
+      (add-classpath artifact-file))
+    deps))
 
 (defn get-classpath
   "Returns the effective classpath (i.e. _not_ the value of
