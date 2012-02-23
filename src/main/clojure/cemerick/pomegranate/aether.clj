@@ -71,21 +71,20 @@
                 :trace (.getTrace r)})})
 
 (defn- default-listener-fn
-  []
-  (let [need-newline? (atom false)
-        maybe-newline #(when @need-newline?
-                         (println)
-                         (reset! need-newline? false))]
-    (fn [{:keys [type method transferred resource error] :as evt}]
-  (let [{:keys [name size transfer-start-time]} resource]
-    (maybe-newline)
+  [{:keys [type method transferred resource error] :as evt}]
+  (let [{:keys [name size repository transfer-start-time]} resource]
     (case type
       :started (do
-                 (print (case method :get "Retreiving" :put "Sending") name)
-                 (when (pos? size) (print (format " (%sk)" (Math/round (double (max 1 (/ size 1024)))))))
-                 (reset! need-newline? true))
+                 (print (case method :get "Retreiving" :put "Sending")
+                        name
+                        (if (neg? size)
+                          ""
+                          (format "(%sk)" (Math/round (double (max 1 (/ size 1024)))))))
+                 (when (< 70 (+ 10 (count name) (count repository)))
+                   (println) (print "    "))
+                 (println (case method :get "from" :put "to") repository))
       (:corrupted :failed) (when error (println (.getMessage error)))
-      nil)))))
+      nil)))
 
 (defn- repository-system
   []
