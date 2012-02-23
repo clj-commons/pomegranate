@@ -138,23 +138,22 @@
     (.setPolicy true (policy settings (:snapshots settings true)))
     (.setPolicy false (policy settings (:releases settings true)))))
 
-(defn- authentication
-  [{:keys [username password passphrase private-key-file] :as settings}]
-  (when (seq settings)
-    (Authentication. username password private-key-file passphrase)))
+(defn- set-authentication
+  [repo {:keys [username password passphrase private-key-file] :as settings}]
+  (if (or username password private-key-file passphrase)
+    (.setAuthentication repo (Authentication. username password private-key-file passphrase))
+    repo))
 
 (defn- make-repository
   [[id settings]]
   (let [settings-map (if (string? settings)
                        {:url settings}
-                       settings)
-        repo (RemoteRepository. id
-                                (:type settings-map "default")
-                                (str (:url settings-map)))]
-    (set-policies repo settings-map)
-    (when-let [auth (authentication settings-map)]
-      (.setAuthentication repo auth))
-    repo))
+                       settings)]
+    (doto (RemoteRepository. id
+                             (:type settings-map "default")
+                             (str (:url settings-map)))
+      (set-policies settings-map)
+      (set-authentication settings-map))))
 
 (defn- group
   [group-artifact]
