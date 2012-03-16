@@ -1,4 +1,5 @@
 (ns cemerick.pomegranate.aether
+  (:refer-clojure :exclude  [type proxy])
   (:require [clojure.java.io :as io]
             clojure.set
             [clojure.string :as str])
@@ -9,7 +10,8 @@
            (org.sonatype.aether.connector.file FileRepositoryConnectorFactory)
            (org.sonatype.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
            (org.sonatype.aether.spi.connector RepositoryConnectorFactory)
-           (org.sonatype.aether.repository ArtifactRepository Authentication RepositoryPolicy LocalRepository RemoteRepository)
+           (org.sonatype.aether.repository Proxy ArtifactRepository Authentication RepositoryPolicy LocalRepository RemoteRepository  )
+           (org.sonatype.aether.util.repository DefaultProxySelector)
            (org.sonatype.aether.graph Dependency Exclusion DependencyNode)
            (org.sonatype.aether.collection CollectRequest)
            (org.sonatype.aether.resolution DependencyRequest ArtifactRequest)
@@ -146,20 +148,36 @@
     (.setPolicy false (policy settings (:releases settings true)))))
 
 (defn- set-authentication
-  [repo {:keys [username password passphrase private-key-file] :as settings}]
+  "Calls the setAuthentication method on obj"
+  [obj {:keys [username password passphrase private-key-file] :as settings}]
   (if (or username password private-key-file passphrase)
-    (.setAuthentication repo (Authentication. username password private-key-file passphrase))
+    (.setAuthentication obj (Authentication. username password private-key-file passphrase))
+    obj))
+
+
+(defn- set-proxy 
+  [repo {:keys [type host port non-proxy-hosts ] 
+         :or {type "http"} 
+         :as proxy} ]
+  (if  (and repo host port)
+    (let [prx-sel  (doto (DefaultProxySelector.)
+                            (.add (doto (Proxy. type host port nil)
+                                    (set-authentication proxy)) 
+                                  non-proxy-hosts)) 
+           prx                 (.getProxy prx-sel repo)]
+           (.setProxy repo prx))
     repo))
 
 (defn- make-repository
-  [[id settings]]
+ [[id settings] proxy]
   (let [settings-map (if (string? settings)
                        {:url settings}
-                       settings)]
+                       settings)] 
     (doto (RemoteRepository. id
                              (:type settings-map "default")
                              (str (:url settings-map)))
       (set-policies settings-map)
+      (set-proxy proxy)
       (set-authentication settings-map))))
 
 (defn- group
@@ -257,8 +275,19 @@ kwarg to the repository kwarg.
       :checksum - :fail (default) | :ignore | :warn
 
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
-  :transfer-listener - same as provided to resolve-dependencies"
-  [& {:keys [coordinates jar-file pom-file repository local-repo transfer-listener]}]
+  :transfer-listener - same as provided to resolve-dependencies
+  
+  :proxy - proxy configuration, can be nil, the host scheme and type must match 
+    :host - proxy hostname 
+    :type - http  (default) | http | https 
+    :port - proxy port 
+    :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
+    :username - username to log in with, may be null
+    :password - password to log in with, may be null
+    :passphrase - passphrase to log in wth, may be null
+    :private-key-file - private key file to log in with, may be null"
+
+  [& {:keys [coordinates jar-file pom-file repository local-repo transfer-listener proxy]}]
   (let [system (repository-system)
         session (repository-session system local-repo false transfer-listener)
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
@@ -268,7 +297,7 @@ kwarg to the repository kwarg.
     (.deploy system session (doto (DeployRequest.)
                       (.addArtifact jar-artifact)
                       (.addArtifact pom-artifact)
-                      (.setRepository (first (map make-repository repository)))))))
+                      (.setRepository (first (map #(make-repository % proxy) repository)))))))
 
 (defn install
   "Install the jar-file kwarg using the pom-file kwarg and coordinates kwarg.
@@ -332,7 +361,7 @@ kwarg to the repository kwarg.
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
       :checksum - :fail (default) | :ignore | :warn
-    
+        
     :local-repo - path to the local repository (defaults to ~/.m2/repository)
     :offline? - if true, no remote repositories will be contacted
     :transfer-listener - the transfer listener that will be notifed of dependency
@@ -344,16 +373,27 @@ kwarg to the repository kwarg.
             interactive console program
         - a function of one argument, which will be called with a map derived from
             each event.
-        - an instance of org.sonatype.aether.transfer.TransferListener"
-  [& {:keys [repositories coordinates retrieve local-repo transfer-listener offline?]
+        - an instance of org.sonatype.aether.transfer.TransferListener
+
+    :proxy - proxy configuration, can be nil, the host scheme and type must match 
+      :host - proxy hostname 
+      :type - http  (default) | http | https 
+      :port - proxy port 
+      :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
+      :username - username to log in with, may be null
+      :password - password to log in with, may be null
+      :passphrase - passphrase to log in wth, may be null
+      :private-key-file - private key file to log in with, may be null"
+
+  [& {:keys [repositories coordinates retrieve local-repo transfer-listener offline? proxy]
       :or {retrieve true}}]
-  (let [repositories (or repositories maven-central)
+   (let [repositories (or repositories maven-central)
         system (repository-system)
         session (repository-session system local-repo offline? transfer-listener)
         deps (map dependency coordinates)
         collect-request (CollectRequest. deps
                                          nil
-                                         (map make-repository repositories))
+                                         (map #(make-repository % proxy) repositories))
         _ (.setRequestContext collect-request "runtime")
         result (if retrieve
                  (.resolveDependencies system session (DependencyRequest. collect-request nil))
