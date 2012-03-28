@@ -82,7 +82,7 @@
   (let [{:keys [name size repository transfer-start-time]} resource]
     (case type
       :started (do
-                 (print (case method :get "Retreiving" :put "Sending")
+                 (print (case method :get "Retrieving" :put "Sending")
                         name
                         (if (neg? size)
                           ""
@@ -105,13 +105,13 @@
   [transfer-listener]
   (cond
     (instance? TransferListener transfer-listener) transfer-listener
-    
+
     (= transfer-listener :stdout)
     (TransferListenerProxy. (comp default-listener-fn transfer-event))
-    
+
     (fn? transfer-listener)
     (TransferListenerProxy. (comp transfer-listener transfer-event))
-    
+
     :else (TransferListenerProxy. (fn [_]))))
 
 (defn- repository-session
@@ -295,11 +295,11 @@ kwarg to the repository kwarg.
               (if-let [dep (.getDependency n)]
                 (update-in g [(dep-spec dep)]
                            clojure.set/union
-                           (->> (.getChildren n) 
+                           (->> (.getChildren n)
                              (map #(.getDependency %))
                              (map dep-spec)
                              set))
-                g)) 
+                g))
             {}
             (tree-seq (constantly true)
                       #(seq (.getChildren %))
@@ -332,7 +332,7 @@ kwarg to the repository kwarg.
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
       :checksum - :fail (default) | :ignore | :warn
-    
+
     :local-repo - path to the local repository (defaults to ~/.m2/repository)
     :offline? - if true, no remote repositories will be contacted
     :transfer-listener - the transfer listener that will be notifed of dependency
