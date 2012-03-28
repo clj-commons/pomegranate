@@ -59,15 +59,15 @@
     
     (is (= hierarchy (aether/dependency-hierarchy deps graph)))))
 
-(deftest online-resolve-deps-with-proxy
+(deftest resolve-deps-with-proxy
   (let [deps (aether/resolve-dependencies :repositories test-remote-repo
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
                                           :proxy {:host "repo1.maven.org"  :port 80  :non-proxy-hosts "clojars.org"} 
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
-    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax/servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
-
+    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
            (.getAbsolutePath (first (aether/dependency-files deps)))))))
+
 (deftest resolve-deps
   (let [deps (aether/resolve-dependencies :repositories test-repo
                                           :coordinates '[[demo/demo "1.0.0"]]

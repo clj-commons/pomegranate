@@ -154,22 +154,21 @@
     (.setAuthentication obj (Authentication. username password private-key-file passphrase))
     obj))
 
-
 (defn- set-proxy 
   [repo {:keys [type host port non-proxy-hosts ] 
          :or {type "http"} 
          :as proxy} ]
-  (if  (and repo host port)
-    (let [prx-sel  (doto (DefaultProxySelector.)
-                            (.add (doto (Proxy. type host port nil)
-                                    (set-authentication proxy)) 
-                                  non-proxy-hosts)) 
-           prx                 (.getProxy prx-sel repo)]
-           (.setProxy repo prx))
+  (if (and repo host port)
+    (let [prx-sel (doto (DefaultProxySelector.)
+                    (.add (doto (Proxy. type host port nil)
+                            (set-authentication proxy)) 
+                      non-proxy-hosts)) 
+          prx (.getProxy prx-sel repo)]
+      (.setProxy repo prx))
     repo))
 
 (defn- make-repository
- [[id settings] proxy]
+  [[id settings] proxy]
   (let [settings-map (if (string? settings)
                        {:url settings}
                        settings)] 
