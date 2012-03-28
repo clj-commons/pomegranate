@@ -312,10 +312,11 @@ kwarg to the repository kwarg.
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
                          (.setFile jar-file))
         pom-artifact (-> (SubArtifact. jar-artifact "" "pom")
-                         (.setFile pom-file))]
-      (.install system session (doto (InstallRequest.)
-                      (.addArtifact jar-artifact)
-                      (.addArtifact pom-artifact)))))
+                         (.setFile pom-file))
+        inst-request (doto (InstallRequest.) (.addArtifact jar-artifact))]
+      (.install system session (if pom-file (doto inst-request
+                                              (.addArtifact pom-artifact))
+                                 inst-request))))
 
 (defn- dependency-graph
   ([node]
