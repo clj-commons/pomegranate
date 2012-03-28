@@ -13,6 +13,8 @@
 (def tmp-remote-repo-dir (.getAbsolutePath (io/file tmp-dir "remote-repo")))
 (def tmp-local-repo-dir (io/file tmp-dir "local-repo"))
 
+(def test-remote-repo {"central" "http://repo1.maven.org/maven2/"})
+
 (def test-repo {"test-repo" "file://test-repo"})
 (def tmp-remote-repo {"tmp-remote-repo" (str "file://" tmp-remote-repo-dir)})
 
@@ -57,6 +59,15 @@
     
     (is (= hierarchy (aether/dependency-hierarchy deps graph)))))
 
+(deftest online-resolve-deps-with-proxy
+  (let [deps (aether/resolve-dependencies :repositories test-remote-repo
+                                          :coordinates '[[javax.servlet/servlet-api "2.5"]]
+                                          :proxy {:host "repo1.maven.org"  :port 80  :non-proxy-hosts "clojars.org"} 
+                                          :local-repo tmp-local-repo-dir)]
+    (is (= 1 (count deps)))
+    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax/servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
+
+           (.getAbsolutePath (first (aether/dependency-files deps)))))))
 (deftest resolve-deps
   (let [deps (aether/resolve-dependencies :repositories test-repo
                                           :coordinates '[[demo/demo "1.0.0"]]
