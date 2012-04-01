@@ -271,15 +271,15 @@ kwarg to the repository kwarg.
       :passphrase - passphrase to log in wth
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
-      :checksum - :fail (default) | :ignore | :warn
+      :checksum - :fail | :ignore | :warn (default)
 
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies
-  
-  :proxy - proxy configuration, can be nil, the host scheme and type must match 
-    :host - proxy hostname 
-    :type - http  (default) | http | https 
-    :port - proxy port 
+
+  :proxy - proxy configuration, can be nil, the host scheme and type must match
+    :host - proxy hostname
+    :type - http  (default) | http | https
+    :port - proxy port
     :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
     :username - username to log in with, may be null
     :password - password to log in with, may be null
@@ -342,8 +342,10 @@ kwarg to the repository kwarg.
 
     :coordinates - [[group/name \"version\" & settings] ..]
       settings:
-      :scope - the maven scope for the dependency (default \"compile\")
-      :optional? - is the dependency optional? (default \"false\")
+      :extension  - the maven extension (type) to require
+      :classifier - the maven classifier to require
+      :scope      - the maven scope for the dependency (default \"compile\")
+      :optional   - is the dependency optional? (default \"false\")
       :exclusions - which sub-dependencies to skip : [group/name & settings]
         settings:
         :classifier (default \"*\")
@@ -360,7 +362,7 @@ kwarg to the repository kwarg.
       :passphrase - passphrase to log in wth
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
-      :checksum - :fail (default) | :ignore | :warn
+      :checksum - :fail | :ignore | :warn (default)
 
     :local-repo - path to the local repository (defaults to ~/.m2/repository)
     :offline? - if true, no remote repositories will be contacted
@@ -376,9 +378,9 @@ kwarg to the repository kwarg.
         - an instance of org.sonatype.aether.transfer.TransferListener
 
     :proxy - proxy configuration, can be nil, the host scheme and type must match 
-      :host - proxy hostname 
-      :type - http  (default) | http | https 
-      :port - proxy port 
+      :host - proxy hostname
+      :type - http  (default) | http | https
+      :port - proxy port
       :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
       :username - username to log in with, may be null
       :password - password to log in with, may be null
