@@ -111,10 +111,123 @@
                   :local-repo tmp-local-repo-dir)
   (is (= 3 (count (.list (io/file tmp-local-repo-dir "group" "artifact" "1.0.0"))))))
 
+(deftest within?-comparisons
+  (is (aether/within? '[demo "0.0.1"]
+                       '[demo "0.0.1"]))
+  (is (aether/within? '[demo "0.0.1"]
+                       '[demo/demo "0.0.1"]))
+  (is (aether/within? '[demo/demo "0.0.1"]
+                       '[demo "0.0.1"]))
+  (is (aether/within? '[demo "0.0.1"]
+                       '[demo "[0.0.1,2.0.0)"]))
+  (is (not (aether/within? '[demo "2.0.0"]
+                            '[demo "[0.0.1,2.0.0)"])))
+  (is (not (aether/within? '[demo "0.0.1"]
+                            '[demo "(0.0.1,2.0.0)"])))
+  (is (aether/within? '[demo "0.0.1-SNAPSHOT"]
+                       '[demo/demo "0.0.1-SNAPSHOT"]))
+  (is (aether/within? '[demo "0.0.1-SNAPSHOT"]
+                       '[demo "0.0.1-SNAPSHOT"]))
+  (is (aether/within? '[demo "0.0.1-20120403.012847-1"]
+                       '[demo "0.0.1-SNAPSHOT"]))
+  (is (not (aether/within? '[demo "0.0.1-SNAPSHOT"]
+                            '[demo "0.0.1-20120403.012847-10"])))
+  (is (aether/within? '[demo "0.0.1"]
+                       '[demo "0.0.1" :extension "jar"]))
+  (is (aether/within? '[demo "0.0.1" :extension "jar"]
+                       '[demo "0.0.1"]))
+  (is (not (aether/within? '[demo "0.0.1" :extension "pom"]
+                            '[demo "0.0.1"])))
+  (is (not (aether/within? '[demo "0.0.1"]
+                            '[demo "0.0.1":extension "pom"])))
+  (is (aether/within? '[demo "0.0.1" :classifier "sources"]
+                       '[demo "0.0.1" :classifier "sources"]))
+  (is (not (aether/within? '[demo "0.0.1"]
+                            '[demo "0.0.1" :classifier "sources"])))
+  (is (not (aether/within? '[demo "0.0.1" :classifier "sources"]
+                            '[demo "0.0.1"])))
+  (is (aether/within? '[demo "0.0.1"]
+                       '[demo "0.0.1" :scope "compile"]))
+  (is (aether/within? '[demo "0.0.1" :scope "compile"]
+                       '[demo "0.0.1"]))
+  (is (aether/within? '[demo "0.0.1" :scope "compile"]
+                       '[demo "0.0.1" :scope "compile"]))
+  (is (not (aether/within? '[demo "0.0.1" :scope "compile"]
+                            '[demo "0.0.1" :scope "test"])))
+  (is (not (aether/within? '[demo "0.0.1" :scope "test"]
+                            '[demo "0.0.1" :scope "compile"])))
+  (is (aether/within? '[demo "0.0.1"]
+                       '[demo "0.0.1" :optional false]))
+  (is (aether/within? '[demo "0.0.1" :optional false]
+                       '[demo "0.0.1"]))
+  (is (aether/within? '[demo "0.0.1" :optional true]
+                       '[demo "0.0.1" :optional true]))
+  (is (not (aether/within? '[demo "0.0.1" :optional true]
+                            '[demo "0.0.1"])))
+  (is (not (aether/within? '[demo "0.0.1"]
+                            '[demo "0.0.1":optional true])))
+  (is (aether/within? '[demo "0.0.1" :exclusions []]
+                       '[demo "0.0.1"]))
+  (is (aether/within? '[demo "0.0.1"]
+                       '[demo "0.0.1" :exclusions []]))
+  (is (aether/within? '[demo "0.0.1" :exclusions [[demo2]]]
+                       '[demo "0.0.1" :exclusions [[demo2]]]))
+  (is (not (aether/within? '[demo "0.0.1" :exclusions [[demo2]]]
+                            '[demo "0.0.1"])))
+  (is (not (aether/within? '[demo "0.0.1"]
+                            '[demo "0.0.1" :exclusions [[demo2]]])))
+  (is (not (aether/within? '[demo "0.0.1" :exclusions [demo2]]
+                            '[demo "0.0.1"])))
+  (is (not (aether/within? '[demo "0.0.1"]
+                            '[demo "0.0.1" :exclusions [demo2]])))
+  (is (aether/within? '[demo "0.0.1" :exclusions [[demo2]
+                                                   [demo3]]]
+                       '[demo "0.0.1" :exclusions [[demo2]
+                                                   [demo3]]]))
+  (is (aether/within? '[demo "0.0.1" :exclusions [[demo3]
+                                                   [demo2]]]
+                       '[demo "0.0.1" :exclusions [[demo2]
+                                                   [demo3]]]))
+  (is (not (aether/within? '[demo "0.0.1" :exclusions [[demo2]]]
+                            '[demo "0.0.1" :exclusions [[demo2]
+                                                        [demo3]]])))
+  (is (not (aether/within? '[demo "0.0.1" :exclusions [[demo2]
+                                                        [demo3]]]
+                            '[demo "0.0.1" :exclusions [[demo2]]])))
+  (is (aether/within? '[demo "0.0.1" :exclusions [[demo2]]]
+                       '[demo "0.0.1" :exclusions [[demo2 :classifier "*"]]]))
+  (is (aether/within? '[demo "0.0.1" :exclusions [[demo2 :classifier "*"]]]
+                       '[demo "0.0.1" :exclusions [[demo2]]]))
+  (is (not (aether/within?
+            '[demo "0.0.1" :exclusions [[demo2 :classifier "*"]]]
+            '[demo "0.0.1" :exclusions [[demo2 :classifier "sources"]]])))
+  (is (not (aether/within?
+            '[demo "0.0.1" :exclusions [[demo2 :classifier "sources"]]]
+            '[demo "0.0.1" :exclusions [[demo2 :classifier "*"]]])))
+  (is (aether/within? '[demo "0.0.1" :exclusions [[demo2]]]
+                       '[demo "0.0.1" :exclusions [[demo2 :extension "*"]]]))
+  (is (aether/within? '[demo "0.0.1" :exclusions [[demo2 :extension "*"]]]
+                       '[demo "0.0.1" :exclusions [[demo2]]]))
+  (is (not (aether/within?
+            '[demo "0.0.1" :exclusions [[demo2 :extension "*"]]]
+            '[demo "0.0.1" :exclusions [[demo2 :extension "jar"]]])))
+  (is (not (aether/within?
+            '[demo "0.0.1" :exclusions [[demo2 :extension "jar"]]]
+            '[demo "0.0.1" :exclusions [[demo2 :extension "*"]]]))))
+
+(deftest dependency-hierarchy-matching
+  (let [coords '[[demo/demo2 "[0.0.1,2.0.0)"]
+                 [tester "0.1.0-SNAPSHOT"]]
+        deps (aether/resolve-dependencies
+              :repositories test-repo
+              :coordinates coords
+              :local-repo tmp-local-repo-dir)]
+    (is (= {['demo/demo2 "1.0.0"] {['demo "1.0.0"] nil}
+            ['tester "0.1.0-20120403.012847-1"] nil}
+           (aether/dependency-hierarchy coords deps)))))
 
 (comment
   "tests needed for:
-  
   repository authentication
   repository policies
   dependency options (scope/optional)

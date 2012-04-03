@@ -2,11 +2,11 @@
 <metadata>
   <groupId>demo</groupId>
   <artifactId>demo</artifactId>
-  <version>1.0.0</version>
   <versioning>
+    <release>1.0.0</release>
     <versions>
       <version>1.0.0</version>
     </versions>
-    <lastUpdated>20111120005849</lastUpdated>
+    <lastUpdated>20120403044818</lastUpdated>
   </versioning>
 </metadata>
