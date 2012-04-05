@@ -18,7 +18,8 @@
            (org.sonatype.aether.util.graph PreorderNodeListGenerator)
            (org.sonatype.aether.util.artifact DefaultArtifact SubArtifact)
            (org.sonatype.aether.deployment DeployRequest)
-           (org.sonatype.aether.installation InstallRequest)))
+           (org.sonatype.aether.installation InstallRequest)
+           (org.sonatype.aether.util.version GenericVersionScheme)))
 
 (def ^{:private true} default-local-repo
   (io/file (System/getProperty "user.home") ".m2" "repository"))
@@ -202,6 +203,11 @@
     (:classifier opts "*")
     (:extension opts "*")))
 
+(defn- normalize-exclusion-spec [spec]
+  (if (symbol? spec)
+    [spec]
+    spec))
+
 (defn- dependency
   [[group-artifact version & {:keys [scope optional exclusions]
                               :as opts
@@ -211,7 +217,7 @@
   (Dependency. (DefaultArtifact. (coordinate-string dep-spec))
                scope
                optional
-               (map (comp exclusion #(if (symbol? %) [%] %)) exclusions)))
+               (map (comp exclusion normalize-exclusion-spec) exclusions)))
 
 (declare dep-spec*)
 
@@ -408,13 +414,66 @@ kwarg to the repository kwarg.
   [graph]
   (->> graph keys (map (comp :file meta)) (remove nil?)))
 
+(defn- exclusion= [spec1 spec2]
+  (let [[dep & opts] (normalize-exclusion-spec spec1)
+        [sdep & sopts] (normalize-exclusion-spec spec2)
+        om (apply hash-map opts)
+        som (apply hash-map sopts)]
+    (and (= (group dep)
+            (group sdep))
+         (= (name dep)
+            (name sdep))
+         (= (:extension om "*")
+            (:extension som "*"))
+         (= (:classifier om "*")
+            (:classifier som "*"))
+         spec2)))
+
+(defn- exclusions-match? [excs sexcs]
+  (if-let [ex (first excs)]
+    (if-let [match (some (partial exclusion= ex) sexcs)]
+      (recur (next excs) (remove #{match} sexcs))
+      false)
+    (empty? sexcs)))
+
+(defn within? [[dep version & opts] [sdep sversion & sopts]]
+  "Determines if the first coordinate would be a version in the second
+   coordinate. The first coordinate is not allowed to contain a
+   version range."
+  (let [om (apply hash-map opts)
+        som (apply hash-map sopts)]
+    (and (= (group dep)
+            (group sdep))
+         (= (name dep)
+            (name sdep))
+         (= (:extension om "jar")
+            (:extension som "jar"))
+         (= (:classifier om)
+            (:classifier som))
+         (= (:scope om "compile")
+            (:scope som "compile"))
+         (= (:optional om false)
+            (:optional som false))
+         (exclusions-match? (:exclusions om) (:exclusions som))
+         (or (= version sversion)
+             (if-let [[_ ver] (re-find #"^(.*)-SNAPSHOT$" sversion)]
+               (re-find (re-pattern (str "^" ver "-\\d+\\.\\d+-\\d+$"))
+                        version)
+               (let [gsv (GenericVersionScheme.)
+                     vc (.parseVersionConstraint gsv sversion)
+                     v (.parseVersion gsv version)]
+                 (.containsVersion vc v)))))))
+
 (defn dependency-hierarchy
   "Returns a dependency hierarchy based on the provided dependency graph
    (as returned by `resolve-dependencies`) and the coordinates that should
    be the root(s) of the hierarchy.  Siblings are sorted alphabetically."
   [root-coordinates dep-graph]
-  (let [hierarchy (for [[root children] (select-keys dep-graph (map (comp dep-spec dependency) root-coordinates))]
-                    [root (dependency-hierarchy children dep-graph)])]
+  (let [root-specs (map (comp dep-spec dependency) root-coordinates)
+        hierarchy (for [root (filter
+                              #(some (fn [root] (within? % root)) root-specs)
+                              (keys dep-graph))]
+                    [root (dependency-hierarchy (dep-graph root) dep-graph)])]
     (when (seq hierarchy)
       (into (sorted-map-by #(apply compare (map coordinate-string %&))) hierarchy))))
 
