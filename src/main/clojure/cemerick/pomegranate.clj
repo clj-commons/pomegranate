@@ -22,9 +22,13 @@
     (.invoke obj (into-array Object args))))
 
 (defprotocol URLClasspath
-  "Ability to dynamically add urls to classloaders"
-  (can-modify? [this] "Returns true if the given classloader can be modified.")
-  (add-url [this url] "add the url to the classpath"))
+  "Ability to dynamically add urls to classloaders.
+
+This protocol is an implementation detail.  Use
+`modifiable-classloader?` and `add-classpath` or `add-dependencies`
+unless you are extending a type to this protocol."
+  (^{:private true} can-modify? [this] "Returns true if the given classloader can be modified.")
+  (^{:private true} add-url [this url] "add the url to the classpath"))
 
 (extend-type DynamicClassLoader
   URLClasspath
