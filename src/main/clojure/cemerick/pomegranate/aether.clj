@@ -436,10 +436,11 @@ kwarg to the repository kwarg.
       false)
     (empty? sexcs)))
 
-(defn within? [[dep version & opts] [sdep sversion & sopts]]
+(defn within?
   "Determines if the first coordinate would be a version in the second
    coordinate. The first coordinate is not allowed to contain a
    version range."
+  [[dep version & opts] [sdep sversion & sopts]]
   (let [om (apply hash-map opts)
         som (apply hash-map sopts)]
     (and (= (group dep)
