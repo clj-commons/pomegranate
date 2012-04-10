@@ -161,9 +161,8 @@
          :as proxy} ]
   (if (and repo host port)
     (let [prx-sel (doto (DefaultProxySelector.)
-                    (.add (doto (Proxy. type host port nil)
-                            (set-authentication proxy)) 
-                      non-proxy-hosts)) 
+                    (.add (set-authentication (Proxy. type host port nil) proxy)
+                          non-proxy-hosts))
           prx (.getProxy prx-sel repo)]
       (.setProxy repo prx))
     repo))
