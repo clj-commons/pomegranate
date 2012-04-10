@@ -2,7 +2,7 @@
 
 [Pomegranate](http://github.com/cemerick/pomegranate) is a library that provides:
 
-1. A sane Clojure-oriented API for Sonatype [Aether](https://github.com/sonatype/sonatype-aether).
+1. A sane Clojure API for Sonatype [Aether](https://github.com/sonatype/sonatype-aether).
 2. A re-implementation of [`add-classpath`](http://clojure.github.com/clojure/clojure.core-api.html#clojure.core/add-classpath) (deprecated in Clojure core) that:
 
 * is a little more comprehensive than core's `add-classpath` — it should work as expected in more circumstances, and
@@ -15,7 +15,7 @@ Insofar as most useful Clojure libraries have dependencies, any reasonable imple
 Pomegranate is available in Maven central.  Add it to your Leiningen `project.clj`:
 
 ```clojure
-[com.cemerick/pomegranate "0.0.10"]
+[com.cemerick/pomegranate "0.0.11"]
 ```
 
 or to your Maven project's `pom.xml`:
@@ -24,29 +24,9 @@ or to your Maven project's `pom.xml`:
 <dependency>
   <groupId>com.cemerick</groupId>
   <artifactId>pomegranate</artifactId>
-  <version>0.0.10</version>
+  <version>0.0.11</version>
 </dependency>
 ```
-
-## Status of Aether support
-
-This library is functionally completely new.  There will be changes.
-
-That said:
-
-#### Very functional
-
-* dependency resolution
-** common dependency graph/hierarchy manipulation ops
-* local installation
-* remote deployment
-* repository authentication for all of the above
-
-#### Not there yet
-
-* support for different dependency resolution profiles/contexts (e.g. resolving `test` or `provided` dependencies, etc)
-* tests; there's halfway decent coverage, but nowhere near the kind of comprehensive combinatorial testing that maven dependency resolution demands
-* Leiningen v2-style plugin for common dependency-related tasks (e.g. dependency-list, dependency-tree, etc)
 
 ## `add-classpath` usage
 
@@ -80,6 +60,33 @@ Now you can analyze and chart away, Incanter having been added to your runtime. 
 
 The arguments to `add-dependencies` look like Leiningen-style notation, and they are.
 
+## Status of Aether support
+
+Pomegranate is being used by [Leiningen v2.x](http://leiningen.org) as
+its sole dependency resolution library.  This has prompted rapid
+maturation of the scope and quality of Aether support.  That said,
+specific API points remain subject to change as we find the right
+abstractions and conventions.
+
+#### Supported features
+
+* dependency resolution
+** common dependency graph/hierarchy manipulation ops
+* local installation
+* remote deployment
+* repository authentication for all of the above
+* HTTP proxy configuration
+* offline mode
+* transfer listeners (with a sane Clojure fn veneer)
+
+#### Not there yet
+
+* repository listeners
+* mirror support
+* options to retrieve a single artifact (e.g. for obtaining
+  source/javadoc)
+* tests; there's halfway decent coverage, but nowhere near the kind of comprehensive combinatorial testing that maven dependency resolution demands
+
 ## Need Help?
 
 Ping `cemerick` on freenode irc or twitter if you have questions
@@ -87,6 +94,7 @@ or would like to contribute patches.
 
 ## License
 
-Copyright © 2011-2012 [Chas Emerick](http://cemerick.com)
+Copyright © 2011-2012 [Chas Emerick](http://cemerick.com) and all other
+contributors.
 
 Licensed under the EPL. (See the file epl-v10.html.)
