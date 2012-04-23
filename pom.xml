@@ -31,9 +31,9 @@
     <properties>
         <clojure.version>1.3.0</clojure.version>
 
-        <aetherVersion>1.13</aetherVersion>
-        <mavenVersion>3.0.3</mavenVersion>
-        <wagonVersion>1.0-beta-7</wagonVersion>
+        <aetherVersion>1.13.1</aetherVersion>
+        <mavenVersion>3.0.4</mavenVersion>
+        <wagonVersion>2.2</wagonVersion>
     </properties>
 
     <dependencies>
@@ -69,6 +69,11 @@
         </dependency>
         
         <!-- wagons for dependency resolution -->
+        <dependency>
+          <groupId>org.apache.maven.wagon</groupId>
+          <artifactId>wagon-provider-api</artifactId>
+          <version>${wagonVersion}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.maven.wagon</groupId>
             <artifactId>wagon-http</artifactId>
