@@ -15,7 +15,7 @@ Insofar as most useful Clojure libraries have dependencies, any reasonable imple
 Pomegranate is available in Maven central.  Add it to your Leiningen `project.clj`:
 
 ```clojure
-[com.cemerick/pomegranate "0.0.11"]
+[com.cemerick/pomegranate "0.0.12"]
 ```
 
 or to your Maven project's `pom.xml`:
@@ -24,7 +24,7 @@ or to your Maven project's `pom.xml`:
 <dependency>
   <groupId>com.cemerick</groupId>
   <artifactId>pomegranate</artifactId>
-  <version>0.0.11</version>
+  <version>0.0.12</version>
 </dependency>
 ```
 
