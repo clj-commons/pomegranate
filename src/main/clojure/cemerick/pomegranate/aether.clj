@@ -259,8 +259,82 @@
                    [:scope scope])
                  (when (seq exclusions)
                    [:exclusions (vec (map exclusion-spec exclusions))])))))
+
+(defn- create-subartifacts
+  [parent [[group-artifact version & {:keys [classifier extension]} :as coords]
+           children]]
+  (let [group (group group-artifact)
+        artifact (name group-artifact)]
+    (when (not= (.getGroupId parent)
+                group)
+      (throw (IllegalArgumentException. (str "Subartifact " coords " does not have group \"" (.getGroupId parent) "\""))))
+    (when (not= (.getArtifactId parent)
+                artifact)
+      (throw (IllegalArgumentException. (str "Subartifact " coords " does not have artifact id \"" (.getArtifactId parent) "\""))))
+    (when (not= (.getVersion parent)
+                version)
+      (throw (IllegalArgumentException. (str "Subartifact " coords " does not have version \"" (.getVersion parent) "\""))))
+    (let [da (-> (SubArtifact. parent classifier extension)
+                 (.setFile (:file (meta coords))))]
+      (conj (mapcat (partial create-subartifacts da) children) da))))
+
+(defn- create-artifacts [[coordinates children]]
+  (let [da (-> (DefaultArtifact. (coordinate-string coordinates))
+               (.setFile (:file (meta coordinates))))]
+    (conj (mapcat (partial create-subartifacts da) children) da)))
+
+(defn deploy-artifacts
+  "Deploy the artifacts kwarg to the repository kwarg.
+
+  :artifacts - map from (with-meta coordinates {:file ..}) to list of subartifacts.  subartifacts are the same, but must have a group/artifact and version the same as the parent.
+  :repository - {name url} | {name settings}
+    settings:
+      :url - URL of the repository
+      :snapshots - use snapshots versions? (default true)
+      :releases - use release versions? (default true)
+      :username - username to log in with
+      :password - password to log in with
+      :passphrase - passphrase to log in wth
+      :private-key-file - private key file to log in with
+      :update - :daily (default) | :always | :never
+      :checksum - :fail | :ignore | :warn (default)
+  :local-repo - path to the local repository (defaults to ~/.m2/repository)
+  :transfer-listener - same as provided to resolve-dependencies
+
+  :proxy - proxy configuration, can be nil, the host scheme and type must match
+    :host - proxy hostname
+    :type - http  (default) | http | https
+    :port - proxy port
+    :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
+    :username - username to log in with, may be null
+    :password - password to log in with, may be null
+    :passphrase - passphrase to log in wth, may be null
+    :private-key-file - private key file to log in with, may be null"
+
+  [& {:keys [artifacts repository local-repo transfer-listener proxy]}]
+  (let [system (repository-system)
+        session (repository-session system local-repo false transfer-listener)]
+    (.deploy system session
+             (doto (DeployRequest.)
+               (.setArtifacts (mapcat create-artifacts artifacts))
+               (.setRepository (first (map #(make-repository % proxy) repository)))))))
+
+(defn install-artifacts
+  "Deploy the file kwarg using the coordinates kwarg to the repository kwarg.
+
+  :artifacts - map from (with-meta coordinates {:file ..}) to list of subartifacts.  subartifacts are the same, but must have a group/artifact and version the same as the parent.:coordinates - [group/name \"version\" (:classifier ..)? (:extension ..)?]
+  :local-repo - path to the local repository (defaults to ~/.m2/repository)
+  :transfer-listener - same as provided to resolve-dependencies"
+
+  [& {:keys [artifacts local-repo transfer-listener]}]
+  (let [system (repository-system)
+        session (repository-session system local-repo false transfer-listener)]
+    (.install system session
+              (doto (InstallRequest.)
+                (.setArtifacts (mapcat create-artifacts artifacts))))))
+
 (defn deploy
-    "Deploy the jar-file kwarg using the pom-file kwarg and coordinates
+  "Deploy the jar-file kwarg using the pom-file kwarg and coordinates
 kwarg to the repository kwarg.
 
   :coordinates - [group/name \"version\"]
@@ -283,25 +357,25 @@ kwarg to the repository kwarg.
 
   :proxy - proxy configuration, can be nil, the host scheme and type must match
     :host - proxy hostname
-    :type - http  (default) | http | https
+    :type - http  (default) | http | https
     :port - proxy port
     :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
     :username - username to log in with, may be null
     :password - password to log in with, may be null
     :passphrase - passphrase to log in wth, may be null
     :private-key-file - private key file to log in with, may be null"
-
-  [& {:keys [coordinates jar-file pom-file repository local-repo transfer-listener proxy]}]
-  (let [system (repository-system)
-        session (repository-session system local-repo false transfer-listener)
-        jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
-                         (.setFile jar-file))
-        pom-artifact (-> (SubArtifact. jar-artifact "" "pom")
-                         (.setFile pom-file))]
-    (.deploy system session (doto (DeployRequest.)
-                      (.addArtifact jar-artifact)
-                      (.addArtifact pom-artifact)
-                      (.setRepository (first (map #(make-repository % proxy) repository)))))))
+  [& {:keys [coordinates jar-file pom-file] :as opts}]
+  (apply deploy-artifacts
+         (apply concat (assoc opts :artifacts
+                              {(with-meta coordinates
+                                 {:file jar-file})
+                               (when pom-file
+                                 {(with-meta
+                                    ((fn [[name version & _]]
+                                       [name version :extension "pom"])
+                                     coordinates)
+                                    {:file pom-file})
+                                  nil})}))))
 
 (defn install
   "Install the jar-file kwarg using the pom-file kwarg and coordinates kwarg.
@@ -311,17 +385,18 @@ kwarg to the repository kwarg.
   :pom-file - a file pointing to the pom
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies"
-  [& {:keys [coordinates jar-file pom-file local-repo transfer-listener]}]
-  (let [system (repository-system)
-        session (repository-session system local-repo false transfer-listener)
-        jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
-                         (.setFile jar-file))
-        inst-request (doto (InstallRequest.) (.addArtifact jar-artifact))]
-      (.install system session (if pom-file
-                                 (doto inst-request
-                                   (.addArtifact (-> (SubArtifact. jar-artifact "" "pom")
-                                                   (.setFile pom-file))))
-                                 inst-request))))
+  [& {:keys [coordinates jar-file pom-file] :as opts}]
+    (apply install-artifacts
+         (apply concat (assoc opts :artifacts
+                              {(with-meta coordinates
+                                 {:file jar-file})
+                               (when pom-file
+                                 {(with-meta
+                                    ((fn [[name version & _]]
+                                       [name version :extension "pom"])
+                                     coordinates)
+                                    {:file pom-file})
+                                  nil})}))))
 
 (defn- dependency-graph
   ([node]
