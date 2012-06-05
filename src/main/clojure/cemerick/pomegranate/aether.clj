@@ -140,7 +140,7 @@
   (RepositoryPolicy.
     (boolean enabled?)
     (update-policies (:update policy-settings :daily))
-    (checksum-policies (:checksum policy-settings :warn))))
+    (checksum-policies (:checksum policy-settings :fail))))
 
 (defn- set-policies
   [repo settings]
@@ -276,7 +276,7 @@ kwarg to the repository kwarg.
       :passphrase - passphrase to log in wth
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
-      :checksum - :fail | :ignore | :warn (default)
+      :checksum - :fail (default) | :ignore | :warn
 
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies
@@ -367,7 +367,7 @@ kwarg to the repository kwarg.
       :passphrase - passphrase to log in wth
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
-      :checksum - :fail | :ignore | :warn (default)
+      :checksum - :fail (default) | :ignore | :warn
 
     :local-repo - path to the local repository (defaults to ~/.m2/repository)
     :offline? - if true, no remote repositories will be contacted
