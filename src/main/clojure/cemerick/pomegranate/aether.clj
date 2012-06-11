@@ -266,6 +266,7 @@ kwarg to the repository kwarg.
   :coordinates - [group/name \"version\"]
   :jar-file - a file pointing to the jar
   :pom-file - a file pointing to the pom
+  :signature-file - a file pointing to the jar's signature
   :repository - {name url} | {name settings}
     settings:
       :url - URL of the repository
@@ -291,17 +292,20 @@ kwarg to the repository kwarg.
     :passphrase - passphrase to log in wth, may be null
     :private-key-file - private key file to log in with, may be null"
 
-  [& {:keys [coordinates jar-file pom-file repository local-repo transfer-listener proxy]}]
+  [& {:keys [coordinates jar-file pom-file signature-file repository local-repo
+             transfer-listener proxy]}]
   (let [system (repository-system)
         session (repository-session system local-repo false transfer-listener)
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
                          (.setFile jar-file))
-        pom-artifact (-> (SubArtifact. jar-artifact "" "pom")
-                         (.setFile pom-file))]
-    (.deploy system session (doto (DeployRequest.)
-                      (.addArtifact jar-artifact)
-                      (.addArtifact pom-artifact)
-                      (.setRepository (first (map #(make-repository % proxy) repository)))))))
+        pom-artifact (SubArtifact. jar-artifact "" "pom" pom-file)
+        request (doto (DeployRequest.)
+                  (.addArtifact jar-artifact)
+                  (.addArtifact pom-artifact)
+                  (.setRepository (make-repository (first repository) proxy)))]
+    (when signature-file
+      (.addArtifact request (SubArtifact. jar-artifact "" "asc" signature-file)))
+    (.deploy system session request)))
 
 (defn install
   "Install the jar-file kwarg using the pom-file kwarg and coordinates kwarg.
