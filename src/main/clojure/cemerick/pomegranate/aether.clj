@@ -488,10 +488,10 @@ kwarg to the repository kwarg.
    (let [repositories (or repositories maven-central)
         system (repository-system)
         session (repository-session system local-repo offline? transfer-listener mirrors)
-        deps (map dependency coordinates)
+        deps (vec (map dependency coordinates))
         collect-request (CollectRequest. deps
                                          nil
-                                         (map #(make-repository % proxy) repositories))
+                                         (vec (map #(make-repository % proxy) repositories)))
         _ (.setRequestContext collect-request "runtime")
         result (if retrieve
                  (.resolveDependencies system session (DependencyRequest. collect-request nil))
