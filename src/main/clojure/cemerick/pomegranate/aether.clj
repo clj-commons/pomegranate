@@ -11,7 +11,7 @@
            (org.sonatype.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
            (org.sonatype.aether.spi.connector RepositoryConnectorFactory)
            (org.sonatype.aether.repository Proxy ArtifactRepository Authentication RepositoryPolicy LocalRepository RemoteRepository  )
-           (org.sonatype.aether.util.repository DefaultProxySelector)
+           (org.sonatype.aether.util.repository DefaultProxySelector DefaultMirrorSelector)
            (org.sonatype.aether.graph Dependency Exclusion DependencyNode)
            (org.sonatype.aether.collection CollectRequest)
            (org.sonatype.aether.resolution DependencyRequest ArtifactRequest)
@@ -117,13 +117,21 @@
 
     :else (TransferListenerProxy. (fn [_]))))
 
+(defn- mirror-selector [mirrors]
+  (let [selector (DefaultMirrorSelector.)]
+    (doseq [[name {:keys [url type repo-manager mirror-of mirror-of-types]}] mirrors]
+      (.add selector name url (or type "default")
+            (boolean repo-manager) mirror-of (or mirror-of-types "default")))
+    selector))
+
 (defn- repository-session
-  [repository-system local-repo offline? transfer-listener]
+  [repository-system local-repo offline? transfer-listener mirrors]
   (-> (MavenRepositorySystemSession.)
     (.setLocalRepositoryManager (.newLocalRepositoryManager repository-system
                                   (-> (io/file (or local-repo default-local-repo))
                                     .getAbsolutePath
                                     LocalRepository.)))
+    (.setMirrorSelector (mirror-selector mirrors))
     (.setOffline (boolean offline?))
     (.setTransferListener (construct-transfer-listener transfer-listener))))
 
@@ -291,9 +299,10 @@ kwarg to the repository kwarg.
     :passphrase - passphrase to log in wth, may be null
     :private-key-file - private key file to log in with, may be null"
 
-  [& {:keys [coordinates jar-file pom-file repository local-repo transfer-listener proxy]}]
+  [& {:keys [coordinates jar-file pom-file repository local-repo
+             transfer-listener proxy mirrors]}]
   (let [system (repository-system)
-        session (repository-session system local-repo false transfer-listener)
+        session (repository-session system local-repo false transfer-listener nil)
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
                          (.setFile jar-file))
         pom-artifact (-> (SubArtifact. jar-artifact "" "pom")
@@ -310,10 +319,11 @@ kwarg to the repository kwarg.
   :jar-file - a file pointing to the jar
   :pom-file - a file pointing to the pom
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
-  :transfer-listener - same as provided to resolve-dependencies"
-  [& {:keys [coordinates jar-file pom-file local-repo transfer-listener]}]
+  :transfer-listener - same as provided to resolve-dependencies
+  :mirrors - same as provided to resolve-dependencies"
+  [& {:keys [coordinates jar-file pom-file local-repo transfer-listener mirrors]}]
   (let [system (repository-system)
-        session (repository-session system local-repo false transfer-listener)
+        session (repository-session system local-repo false transfer-listener mirrors)
         jar-artifact (-> (DefaultArtifact. (coordinate-string coordinates))
                          (.setFile jar-file))
         inst-request (doto (InstallRequest.) (.addArtifact jar-artifact))]
@@ -390,13 +400,20 @@ kwarg to the repository kwarg.
       :username - username to log in with, may be null
       :password - password to log in with, may be null
       :passphrase - passphrase to log in wth, may be null
-      :private-key-file - private key file to log in with, may be null"
+      :private-key-file - private key file to log in with, may be null
 
-  [& {:keys [repositories coordinates retrieve local-repo transfer-listener offline? proxy]
+    :mirrors - {name settings ..}
+      settings:
+      :url          - URL of the mirror
+      :mirror-of    - name of repository being mirrored
+      :repo-manager - whether the mirror is a repository manager (boolean)"
+
+  [& {:keys [repositories coordinates retrieve local-repo transfer-listener
+             offline? proxy mirrors]
       :or {retrieve true}}]
    (let [repositories (or repositories maven-central)
         system (repository-system)
-        session (repository-session system local-repo offline? transfer-listener)
+        session (repository-session system local-repo offline? transfer-listener mirrors)
         deps (map dependency coordinates)
         collect-request (CollectRequest. deps
                                          nil
