@@ -12,6 +12,7 @@
 (def tmp-dir (io/file (System/getProperty "java.io.tmpdir") "pomegranate-test-tmp"))
 (def tmp-remote-repo-dir (.getAbsolutePath (io/file tmp-dir "remote-repo")))
 (def tmp-local-repo-dir (io/file tmp-dir "local-repo"))
+(def tmp-local-repo2-dir (io/file tmp-dir "local-repo2"))
 
 (def test-remote-repo {"central" "http://repo1.maven.org/maven2/"})
 
@@ -113,12 +114,116 @@
                  :local-repo tmp-local-repo-dir)
   (is (= 6 (count (.list (io/file tmp-remote-repo-dir "group" "artifact" "1.0.0"))))))
 
+(deftest deploy-jar-with-pom
+  (aether/deploy :coordinates '[group/artifact "1.0.0"]
+                 :jar-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
+                 :repository tmp-remote-repo
+                 :local-repo tmp-local-repo-dir)
+  (is (= 3 (count (.list (io/file tmp-remote-repo-dir "group" "artifact" "1.0.0"))))))
+
 (deftest install-jar
   (aether/install :coordinates '[group/artifact "1.0.0"]
                   :jar-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
                   :pom-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.pom")
                   :local-repo tmp-local-repo-dir)
   (is (= 3 (count (.list (io/file tmp-local-repo-dir "group" "artifact" "1.0.0"))))))
+
+(deftest deploy-artifacts
+  (aether/deploy-artifacts
+   :artifacts {(with-meta '[demo "1.0.0"]
+                 {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
+               {(with-meta '[demo "1.0.0" :extension "*.asc"]
+                  {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
+                nil
+                (with-meta '[demo "1.0.0" :extension "pom"]
+                  {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
+                {(with-meta '[demo "1.0.0" :extension "*.asc"]
+                   {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
+                 nil}}}
+   :repository tmp-remote-repo
+   :local-repo tmp-local-repo-dir)
+  (is (= #{"demo-1.0.0.pom.md5"
+           "demo-1.0.0.pom.sha1"
+           "demo-1.0.0.pom"
+           "demo-1.0.0.pom.asc.md5"
+           "demo-1.0.0.pom.asc.sha1"
+           "demo-1.0.0.pom.asc"
+           "demo-1.0.0.jar.md5"
+           "demo-1.0.0.jar.sha1"
+           "demo-1.0.0.jar"
+           "demo-1.0.0.jar.asc.md5"
+           "demo-1.0.0.jar.asc.sha1"
+           "demo-1.0.0.jar.asc"}
+         (set (.list (io/file tmp-remote-repo-dir "demo" "demo" "1.0.0")))))
+  (is (= '{[demo "1.0.0"] nil}
+         (aether/resolve-dependencies :repositories tmp-remote-repo
+                                      :coordinates
+                                      '[[demo "1.0.0"]]
+                                      :local-repo tmp-local-repo2-dir)))
+  (is (= '{[demo "1.0.0" :extension "pom"] nil}
+         (aether/resolve-dependencies :repositories tmp-remote-repo
+                                      :coordinates
+                                      '[[demo "1.0.0" :extension "pom"]]
+                                      :local-repo tmp-local-repo2-dir)))
+  (is (= '{[demo "1.0.0" :extension "jar.asc"] nil}
+         (aether/resolve-dependencies :repositories tmp-remote-repo
+                                      :coordinates
+                                      '[[demo "1.0.0" :extension "jar.asc"]]
+                                      :local-repo tmp-local-repo2-dir)))
+  (is (= '{[demo "1.0.0" :extension "pom.asc"] nil}
+         (aether/resolve-dependencies :repositories tmp-remote-repo
+                                      :coordinates
+                                      '[[demo "1.0.0" :extension "pom.asc"]]
+                                      :local-repo tmp-local-repo2-dir))))
+
+(deftest install-artifacts
+  (aether/install-artifacts
+   :artifacts {(with-meta '[demo "1.0.0"]
+                 {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
+               {(with-meta '[demo "1.0.0" :extension "*.asc"]
+                  {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
+                nil
+                (with-meta '[demo "1.0.0" :extension "pom"]
+                  {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
+                {(with-meta '[demo "1.0.0" :extension "*.asc"]
+                   {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
+                 nil}}}
+   :local-repo tmp-local-repo-dir)
+  (is (= #{"demo-1.0.0.jar"
+           "demo-1.0.0.pom"
+           "demo-1.0.0.jar.asc"
+           "demo-1.0.0.pom.asc"
+           "_maven.repositories"}
+         (set (.list (io/file tmp-local-repo-dir "demo" "demo" "1.0.0"))))))
+
+(deftest deploy-exceptions
+  (is (thrown-with-msg? IllegalArgumentException #"not have group \"demo\""
+        (aether/deploy-artifacts
+         :artifacts {(with-meta '[demo "1.0.0"]
+                       {:file nil})
+                     {(with-meta '[group/demo "1.0.0" :extension "*.asc"]
+                        {:file nil})
+                      nil}}
+         :repository tmp-remote-repo
+         :local-repo tmp-local-repo-dir)))
+  (is (thrown-with-msg? IllegalArgumentException #"not have artifact id \"demo\""
+        (aether/deploy-artifacts
+         :artifacts {(with-meta '[demo "1.0.0"]
+                       {:file nil})
+                     {(with-meta '[demo/artifact "1.0.0" :extension "*.asc"]
+                        {:file nil})
+                      nil}}
+         :repository tmp-remote-repo
+         :local-repo tmp-local-repo-dir)))
+  (is (thrown-with-msg? IllegalArgumentException #"not have version \"1.0.0\""
+        (aether/deploy-artifacts
+         :artifacts {(with-meta '[demo "1.0.0"]
+                       {:file nil})
+                     {(with-meta '[demo "1.0.1" :extension "*.asc"]
+                        {:file nil})
+                      nil}}
+         :repository tmp-remote-repo
+         :local-repo tmp-local-repo-dir))))
 
 (deftest within?-comparisons
   (is (aether/within? '[demo "0.0.1"]
