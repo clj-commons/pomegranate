@@ -392,8 +392,7 @@ kwarg to the repository kwarg.
   :jar-file - a file pointing to the jar
   :pom-file - a file pointing to the pom
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
-  :transfer-listener - same as provided to resolve-dependencies
-  :mirrors - same as provided to resolve-dependencies"
+  :transfer-listener - same as provided to resolve-dependencies"
   [& {:keys [coordinates jar-file pom-file] :as opts}]
     (apply install-artifacts
          (apply concat (assoc opts :artifacts
@@ -485,13 +484,19 @@ kwarg to the repository kwarg.
   [& {:keys [repositories coordinates retrieve local-repo transfer-listener
              offline? proxy mirrors]
       :or {retrieve true}}]
-   (let [repositories (or repositories maven-central)
+  (let [repositories (or repositories maven-central)
         system (repository-system)
         session (repository-session system local-repo offline? transfer-listener mirrors)
         deps (vec (map dependency coordinates))
-        collect-request (CollectRequest. deps
-                                         nil
-                                         (vec (map #(make-repository % proxy) repositories)))
+        collect-request
+        (CollectRequest. deps
+                         nil
+                         (vec (map #(let [repo (make-repository % proxy)]
+                                      (-> session
+                                          (.getMirrorSelector)
+                                          (.getMirror repo)
+                                          (or repo)))
+                                   repositories)))
         _ (.setRequestContext collect-request "runtime")
         result (if retrieve
                  (.resolveDependencies system session (DependencyRequest. collect-request nil))
