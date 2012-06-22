@@ -70,9 +70,9 @@
            (.getAbsolutePath (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-mirror
-  (let [deps (aether/resolve-dependencies :repositories test-remote-repo
+  (let [deps (aether/resolve-dependencies :repositories {"clojars" "http://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {"uk" {:url "http://uk.maven.org/maven2" :mirror-of "central"}}
+                                          :mirrors {"uk" {:url "http://uk.maven.org/maven2" :mirror-of "*"}}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
