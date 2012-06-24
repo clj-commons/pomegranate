@@ -130,16 +130,13 @@
 
 (deftest deploy-artifacts
   (aether/deploy-artifacts
-   :artifacts {(with-meta '[demo "1.0.0"]
-                 {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
-               {(with-meta '[demo "1.0.0" :extension "*.asc"]
-                  {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
-                nil
-                (with-meta '[demo "1.0.0" :extension "pom"]
-                  {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
-                {(with-meta '[demo "1.0.0" :extension "*.asc"]
-                   {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
-                 nil}}}
+   :artifacts [['demo "1.0.0" :file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
+                :subartifacts [['demo "1.0.0" :extension "*.asc"
+                                :file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")]
+                               ['demo "1.0.0" :extension "pom"
+                                :file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
+                                :subartifacts [['demo "1.0.0" :extension "*.asc"
+                                                :file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")]]]]]]
    :repository tmp-remote-repo
    :local-repo tmp-local-repo-dir)
   (is (= #{"demo-1.0.0.pom.md5"
@@ -178,16 +175,13 @@
 
 (deftest install-artifacts
   (aether/install-artifacts
-   :artifacts {(with-meta '[demo "1.0.0"]
-                 {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
-               {(with-meta '[demo "1.0.0" :extension "*.asc"]
-                  {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
-                nil
-                (with-meta '[demo "1.0.0" :extension "pom"]
-                  {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
-                {(with-meta '[demo "1.0.0" :extension "*.asc"]
-                   {:file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")})
-                 nil}}}
+   :artifacts [['demo "1.0.0" :file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
+                :subartifacts [['demo "1.0.0" :extension "*.asc"
+                                :file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")]
+                               ['demo "1.0.0" :extension "pom"
+                                :file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
+                                :subartifacts [['demo "1.0.0" :extension "*.asc"
+                                                :file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")]]]]]]
    :local-repo tmp-local-repo-dir)
   (is (= #{"demo-1.0.0.jar"
            "demo-1.0.0.pom"
@@ -197,31 +191,22 @@
          (set (.list (io/file tmp-local-repo-dir "demo" "demo" "1.0.0"))))))
 
 (deftest deploy-exceptions
-  (is (thrown-with-msg? IllegalArgumentException #"not have group \"demo\""
+  (is (thrown-with-msg? IllegalArgumentException #"does not match parent"
         (aether/deploy-artifacts
-         :artifacts {(with-meta '[demo "1.0.0"]
-                       {:file nil})
-                     {(with-meta '[group/demo "1.0.0" :extension "*.asc"]
-                        {:file nil})
-                      nil}}
+         :artifacts [['demo "1.0.0"
+                      :subartifacts [['group/demo "1.0.0" :extension "*.asc"]]]]
          :repository tmp-remote-repo
          :local-repo tmp-local-repo-dir)))
-  (is (thrown-with-msg? IllegalArgumentException #"not have artifact id \"demo\""
+  (is (thrown-with-msg? IllegalArgumentException #"does not match parent"
         (aether/deploy-artifacts
-         :artifacts {(with-meta '[demo "1.0.0"]
-                       {:file nil})
-                     {(with-meta '[demo/artifact "1.0.0" :extension "*.asc"]
-                        {:file nil})
-                      nil}}
+         :artifacts [['demo "1.0.0"
+                      :subartifacts [['demo/artifact "1.0.0" :extension "*.asc"]]]]
          :repository tmp-remote-repo
          :local-repo tmp-local-repo-dir)))
-  (is (thrown-with-msg? IllegalArgumentException #"not have version \"1.0.0\""
+  (is (thrown-with-msg? IllegalArgumentException #"does not match parent"
         (aether/deploy-artifacts
-         :artifacts {(with-meta '[demo "1.0.0"]
-                       {:file nil})
-                     {(with-meta '[demo "1.0.1" :extension "*.asc"]
-                        {:file nil})
-                      nil}}
+         :artifacts [['demo "1.0.0"
+                      :subartifacts [['demo "1.0.1" :extension "*.asc"]]]]
          :repository tmp-remote-repo
          :local-repo tmp-local-repo-dir))))
 
