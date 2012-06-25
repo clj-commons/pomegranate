@@ -269,33 +269,22 @@
                  (when (seq exclusions)
                    [:exclusions (vec (map exclusion-spec exclusions))])))))
 
-(defn- create-subartifacts
-  [parent [[group-artifact version & {:keys [classifier extension]} :as coords]
-           children]]
-  (let [group (group group-artifact)
-        artifact (name group-artifact)]
-    (when (not= (.getGroupId parent)
-                group)
-      (throw (IllegalArgumentException. (str "Subartifact " coords " does not have group \"" (.getGroupId parent) "\""))))
-    (when (not= (.getArtifactId parent)
-                artifact)
-      (throw (IllegalArgumentException. (str "Subartifact " coords " does not have artifact id \"" (.getArtifactId parent) "\""))))
-    (when (not= (.getVersion parent)
-                version)
-      (throw (IllegalArgumentException. (str "Subartifact " coords " does not have version \"" (.getVersion parent) "\""))))
-    (let [da (-> (SubArtifact. parent classifier extension)
-                 (.setFile (:file (meta coords))))]
-      (conj (mapcat (partial create-subartifacts da) children) da))))
-
-(defn- create-artifacts [[coordinates children]]
-  (let [da (-> (DefaultArtifact. (coordinate-string coordinates))
-               (.setFile (:file (meta coordinates))))]
-    (conj (mapcat (partial create-subartifacts da) children) da)))
+(defn- create-artifact
+  [files artifact]
+  (if-let [file (get files artifact)]
+    (-> (coordinate-string artifact)
+      DefaultArtifact.
+      (.setFile (io/file file)))
+    (throw (IllegalArgumentException. (str "No file provided for artifact " artifact)))))
 
 (defn deploy-artifacts
   "Deploy the artifacts kwarg to the repository kwarg.
 
-  :artifacts - map from (with-meta coordinates {:file ..}) to list of subartifacts.  subartifacts are the same, but must have a group/artifact and version the same as the parent.
+  :artifacts - a seq of artifact vectors, e.g. '[[group/artifact \"1.0.0\"]] or
+               '[[group/artifact \"1.0.0\"] [group/artifact \"1.0.0\" :extension \"pom\"]].
+               All artifacts should have the same version and group and artifact IDs.
+  :files - map from artifact vectors to file paths or java.io.File objects
+           where the file to be deployed for each artifact is to be found
   :repository - {name url} | {name settings}
     settings:
       :url - URL of the repository
@@ -320,27 +309,36 @@
     :passphrase - passphrase to log in wth, may be null
     :private-key-file - private key file to log in with, may be null"
 
-  [& {:keys [artifacts repository local-repo transfer-listener proxy]}]
+  [& {:keys [artifacts files repository local-repo transfer-listener proxy]}]
+  (when (or (empty? artifacts) (empty? files))
+    (throw (IllegalArgumentException. "Must provide valid :artifacts and :files to deploy-artifacts")))
+  (when (->> artifacts
+          (map (fn [[ga v]] [(if (namespace ga) ga (symbol (str ga) (str ga))) v]))
+          set
+          count
+          (< 1))
+    (throw (IllegalArgumentException.
+             (str "Provided artifacts have varying version, group, or artifact IDs: " artifacts))))
   (let [system (repository-system)
         session (repository-session system local-repo false transfer-listener nil)]
     (.deploy system session
              (doto (DeployRequest.)
-               (.setArtifacts (mapcat create-artifacts artifacts))
+               (.setArtifacts (vec (map (partial create-artifact files) artifacts)))
                (.setRepository (first (map #(make-repository % proxy) repository)))))))
 
 (defn install-artifacts
   "Deploy the file kwarg using the coordinates kwarg to the repository kwarg.
 
-  :artifacts - map from (with-meta coordinates {:file ..}) to list of subartifacts.  subartifacts are the same, but must have a group/artifact and version the same as the parent.:coordinates - [group/name \"version\" (:classifier ..)? (:extension ..)?]
+  :artifacts - same as with deploy-artifacts
+  :files - same as with deploy-artifacts
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies"
-
-  [& {:keys [artifacts local-repo transfer-listener]}]
+  [& {:keys [artifacts files local-repo transfer-listener]}]
   (let [system (repository-system)
         session (repository-session system local-repo false transfer-listener nil)]
     (.install system session
               (doto (InstallRequest.)
-                (.setArtifacts (mapcat create-artifacts artifacts))))))
+                (.setArtifacts (vec (map (partial create-artifact files) artifacts)))))))
 
 (defn deploy
   "Deploy the jar-file kwarg using the pom-file kwarg and coordinates
@@ -375,16 +373,13 @@ kwarg to the repository kwarg.
     :private-key-file - private key file to log in with, may be null"
   [& {:keys [coordinates jar-file pom-file] :as opts}]
   (apply deploy-artifacts
-         (apply concat (assoc opts :artifacts
-                              {(with-meta coordinates
-                                 {:file jar-file})
-                               (when pom-file
-                                 {(with-meta
-                                    ((fn [[name version & _]]
-                                       [name version :extension "pom"])
-                                     coordinates)
-                                    {:file pom-file})
-                                  nil})}))))
+    (apply concat (assoc opts
+                    :artifacts (if pom-file
+                                 [coordinates (into coordinates [:extension "pom"])]
+                                 [coordinates])
+                    :files (merge {coordinates jar-file}
+                             (when pom-file
+                               {(into coordinates [:extension "pom"]) pom-file}))))))
 
 (defn install
   "Install the jar-file kwarg using the pom-file kwarg and coordinates kwarg.
@@ -395,17 +390,14 @@ kwarg to the repository kwarg.
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies"
   [& {:keys [coordinates jar-file pom-file] :as opts}]
-    (apply install-artifacts
-         (apply concat (assoc opts :artifacts
-                              {(with-meta coordinates
-                                 {:file jar-file})
-                               (when pom-file
-                                 {(with-meta
-                                    ((fn [[name version & _]]
-                                       [name version :extension "pom"])
-                                     coordinates)
-                                    {:file pom-file})
-                                  nil})}))))
+  (apply install-artifacts
+    (apply concat (assoc opts
+                    :artifacts (if pom-file
+                                 [coordinates (into coordinates [:extension "pom"])]
+                                 [coordinates])
+                    :files (merge {coordinates jar-file}
+                             (when pom-file
+                               {(into coordinates [:extension "pom"]) pom-file}))))))
 
 (defn- dependency-graph
   ([node]
