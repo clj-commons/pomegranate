@@ -97,6 +97,17 @@
     (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
                             files))))))
 
+(deftest resolve-deps-with-deps
+  (let [deps (aether/resolve-dependencies
+              :repositories {}
+              :coordinates [(with-meta '[demo "1.0.0"]
+                               {:file (io/file "test-repo" "demo" "demo"
+                                               "1.0.0" "demo-1.0.0.jar")})]
+              :local-repo tmp-local-repo-dir)
+        files (aether/dependency-files deps)]
+    (is (= 1 (count files)))
+    (is (= nil (:file (meta (first files)))))))
+
 (deftest resolve-deps-with-exclusions
   (let [deps (aether/resolve-dependencies :repositories test-repo
                                           :coordinates

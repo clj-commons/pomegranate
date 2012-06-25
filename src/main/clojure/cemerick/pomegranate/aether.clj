@@ -16,7 +16,8 @@
            (org.sonatype.aether.collection CollectRequest)
            (org.sonatype.aether.resolution DependencyRequest ArtifactRequest)
            (org.sonatype.aether.util.graph PreorderNodeListGenerator)
-           (org.sonatype.aether.util.artifact DefaultArtifact SubArtifact)
+           (org.sonatype.aether.util.artifact DefaultArtifact SubArtifact
+                                              ArtifactProperties)
            (org.sonatype.aether.deployment DeployRequest)
            (org.sonatype.aether.installation InstallRequest)
            (org.sonatype.aether.util.version GenericVersionScheme)))
@@ -221,10 +222,15 @@
                               :or {scope "compile"
                                    optional false}}
     :as dep-spec]]
-  (Dependency. (DefaultArtifact. (coordinate-string dep-spec))
-               scope
-               optional
-               (map (comp exclusion normalize-exclusion-spec) exclusions)))
+  (let [a (DefaultArtifact. (coordinate-string dep-spec))
+        file (:file (meta dep-spec))]
+    (Dependency. (if file
+                     (.setProperties a {ArtifactProperties/LOCAL_PATH
+                                        (.getPath file)})
+                     a)
+                 scope
+                 optional
+                 (map (comp exclusion normalize-exclusion-spec) exclusions))))
 
 (declare dep-spec*)
 
