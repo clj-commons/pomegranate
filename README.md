@@ -1,4 +1,4 @@
-# Pomegranate
+# Pomegranate  [![Travis CI status](https://secure.travis-ci.org/cemerick/pomegranate.png)](http://travis-ci.org/#!/cemerick/pomegranate/builds)
 
 [Pomegranate](http://github.com/cemerick/pomegranate) is a library that provides:
 
