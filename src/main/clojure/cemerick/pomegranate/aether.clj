@@ -217,15 +217,10 @@
                               :or {scope "compile"
                                    optional false}}
     :as dep-spec]]
-  (let [a (DefaultArtifact. (coordinate-string dep-spec))
-        file (:file (meta dep-spec))]
-    (Dependency. (if file
-                     (.setProperties a {ArtifactProperties/LOCAL_PATH
-                                        (.getPath file)})
-                     a)
-                 scope
-                 optional
-                 (map (comp exclusion normalize-exclusion-spec) exclusions))))
+  (Dependency. (DefaultArtifact. (coordinate-string dep-spec))
+               scope
+               optional
+               (map (comp exclusion normalize-exclusion-spec) exclusions)))
 
 (declare dep-spec*)
 
@@ -522,8 +517,8 @@ kwarg to the repository kwarg.
       :name         - name/id of the mirror
       :repo-manager - whether the mirror is a repository manager"
 
-  [& {:keys [repositories coordinates retrieve local-repo transfer-listener
-             offline? proxy mirrors]
+  [& {:keys [repositories coordinates files retrieve local-repo
+             transfer-listener offline? proxy mirrors]
       :or {retrieve true}}]
   (let [repositories (or repositories maven-central)
         system (repository-system)
@@ -531,7 +526,15 @@ kwarg to the repository kwarg.
         mirror-selector (mirror-selector mirror-selector-fn proxy)
         session (repository-session system local-repo
                   offline? transfer-listener mirror-selector)
-        deps (vec (map dependency coordinates))
+        deps (->> coordinates
+               (map #(if-let [local-file (get files %)]
+                       (.setArtifact (dependency %)
+                         (-> (dependency %)
+                           .getArtifact
+                           (.setProperties {ArtifactProperties/LOCAL_PATH
+                                            (.getPath (io/file local-file))})))
+                       (dependency %)))
+               vec)
         collect-request
         (CollectRequest. deps
                          nil
