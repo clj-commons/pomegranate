@@ -72,7 +72,26 @@
 (deftest resolve-deps-with-mirror
   (let [deps (aether/resolve-dependencies :repositories {"clojars" "http://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {"uk" {:url "http://uk.maven.org/maven2" :mirror-of "*"}}
+                                          :mirrors {"clojars" {:url "http://uk.maven.org/maven2"}}
+                                          :local-repo tmp-local-repo-dir)]
+    (is (= 1 (count deps)))
+    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
+           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+
+(deftest resolve-deps-with-wildcard-mirror
+  (let [deps (aether/resolve-dependencies :repositories {"clojars" "http://clojars.org/repo"}
+                                          :coordinates '[[javax.servlet/servlet-api "2.5"]]
+                                          :mirrors {#".+" {:url "http://uk.maven.org/maven2"}}
+                                          :local-repo tmp-local-repo-dir)]
+    (is (= 1 (count deps)))
+    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
+           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+
+(deftest resolve-deps-with-wildcard-override-mirror
+  (let [deps (aether/resolve-dependencies :repositories test-remote-repo
+                                          :coordinates '[[javax.servlet/servlet-api "2.5"]]
+                                          :mirrors {#".+" {:url "http://clojars.org/repo"}
+                                                    (ffirst test-remote-repo) nil}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))

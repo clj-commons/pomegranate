@@ -10,7 +10,9 @@
            (org.sonatype.aether.connector.file FileRepositoryConnectorFactory)
            (org.sonatype.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
            (org.sonatype.aether.spi.connector RepositoryConnectorFactory)
-           (org.sonatype.aether.repository Proxy ArtifactRepository Authentication RepositoryPolicy LocalRepository RemoteRepository  )
+           (org.sonatype.aether.repository Proxy ArtifactRepository Authentication
+                                           RepositoryPolicy LocalRepository RemoteRepository
+                                           MirrorSelector)
            (org.sonatype.aether.util.repository DefaultProxySelector DefaultMirrorSelector)
            (org.sonatype.aether.graph Dependency Exclusion DependencyNode)
            (org.sonatype.aether.collection CollectRequest)
@@ -118,21 +120,14 @@
 
     :else (TransferListenerProxy. (fn [_]))))
 
-(defn- mirror-selector [mirrors]
-  (let [selector (DefaultMirrorSelector.)]
-    (doseq [[name {:keys [url type repo-manager mirror-of mirror-of-types]}] mirrors]
-      (.add selector name url (or type "default")
-            (boolean repo-manager) mirror-of (or mirror-of-types "default")))
-    selector))
-
 (defn- repository-session
-  [repository-system local-repo offline? transfer-listener mirrors]
+  [repository-system local-repo offline? transfer-listener mirror-selector]
   (-> (MavenRepositorySystemSession.)
     (.setLocalRepositoryManager (.newLocalRepositoryManager repository-system
                                   (-> (io/file (or local-repo default-local-repo))
                                     .getAbsolutePath
                                     LocalRepository.)))
-    (.setMirrorSelector (mirror-selector mirrors))
+    (.setMirrorSelector mirror-selector)
     (.setOffline (boolean offline?))
     (.setTransferListener (construct-transfer-listener transfer-listener))))
 
@@ -428,6 +423,48 @@ kwarg to the repository kwarg.
                       #(seq (.getChildren %))
                       node))))
 
+(defn- mirror-selector-fn
+  "Default mirror selection function.  The first argument should be a map
+   like that described as the :mirrors argument in resolve-dependencies.
+   The second argument should be a repository spec, also as described in
+   resolve-dependencies.  Will return the mirror spec that matches the
+   provided repository spec."
+  [mirrors {:keys [name url snapshots releases]}]
+  (let [mirrors (filter (fn [[matcher mirror-spec]]
+                          (or
+                            (and (string? matcher) (or (= matcher name) (= matcher url)))
+                            (and (instance? java.util.regex.Pattern matcher)
+                                 (or (re-matches matcher name) (re-matches matcher url)))))
+                        mirrors)]
+    (case (count mirrors)
+      0 nil
+      1 (-> mirrors first second)
+      (if (some nil? (map second mirrors))
+        ;; wildcard override
+        nil
+        (throw (IllegalArgumentException.
+               (str "Multiple mirrors configured to match repository " {name url} ": "
+                 (into {} (map #(update-in % [1] select-keys [:name :url]) mirrors)))))))))
+
+(defn- mirror-selector
+  "Returns a MirrorSelector that delegates matching of mirrors to given remote repositories
+   to the provided function.  Any returned repository specifications are turned into
+   RemoteRepository instances, and configured to use the provided proxy."
+  [mirror-selector-fn proxy]
+  (reify MirrorSelector
+    (getMirror [_ repo]
+      (let [repo-spec {:name (.getId repo)
+                       :url (.getUrl repo)
+                       :snapshots (-> repo (.getPolicy true) .isEnabled)
+                       :releases (-> repo (.getPolicy false) .isEnabled)}
+            
+            {:keys [name repo-manager content-type] :as mirror-spec}
+            (mirror-selector-fn repo-spec)]
+        (when-let [mirror (and mirror-spec (make-repository [name mirror-spec] proxy))]
+        (-> (.setMirroredRepositories mirror [repo])
+          (.setRepositoryManager (boolean repo-manager))
+          (.setContentType (or content-type "default"))))))))
+
 (defn resolve-dependencies
   "Collects dependencies for the coordinates kwarg, using repositories from the repositories kwarg.
    Returns a graph of dependencies; each dependency's metadata contains the source Aether
@@ -481,18 +518,27 @@ kwarg to the repository kwarg.
       :passphrase - passphrase to log in wth, may be null
       :private-key-file - private key file to log in with, may be null
 
-    :mirrors - {name settings ..}
-      settings:
-      :url          - URL of the mirror
-      :mirror-of    - name of repository being mirrored
-      :repo-manager - whether the mirror is a repository manager (boolean)"
+    :mirrors - {matches settings ..}
+      matches - a string or regex that will be used to match the mirror to
+                candidate repositories. Attempts will be made to match the
+                string/regex to repository names and URLs, with exact string
+                matches preferred. Wildcard mirrors can be specified with
+                a match-all regex such as #\".+\".  Excluding a repository
+                from mirroring can be done by mapping a string or regex matching
+                the repository in question to nil. 
+      settings include these keys, and all those supported by :repositories:
+      :name         - name/id of the mirror
+      :repo-manager - whether the mirror is a repository manager"
 
   [& {:keys [repositories coordinates retrieve local-repo transfer-listener
              offline? proxy mirrors]
       :or {retrieve true}}]
   (let [repositories (or repositories maven-central)
         system (repository-system)
-        session (repository-session system local-repo offline? transfer-listener mirrors)
+        mirror-selector-fn (memoize (partial mirror-selector-fn mirrors))
+        mirror-selector (mirror-selector mirror-selector-fn proxy)
+        session (repository-session system local-repo
+                  offline? transfer-listener mirror-selector)
         deps (vec (map dependency coordinates))
         collect-request
         (CollectRequest. deps
