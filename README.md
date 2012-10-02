@@ -60,6 +60,13 @@ Now you can analyze and chart away, Incanter having been added to your runtime. 
 
 The arguments to `add-dependencies` look like Leiningen-style notation, and they are.
 
+Please note that **there are a number of scenarios in which `add-dependencies` will not work, or
+will not work as you'd expect**.  Many of these are due to the nature of JVM classloaders
+(e.g. adding jars containing conflicting versions of a particular dependency will rarely
+end well), which Pomegranate does not currently attempt to hide.  Thus, `add-classpath` and
+`add-dependencies` should be considered escape hatches to be used when necessary, rather than
+a regular part of your development workflow.
+
 ## Status of Aether support
 
 Pomegranate is being used by [Leiningen v2.x](http://leiningen.org) as
