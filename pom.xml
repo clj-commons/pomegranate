@@ -34,6 +34,7 @@
         <aetherVersion>1.13.1</aetherVersion>
         <mavenVersion>3.0.4</mavenVersion>
         <wagonVersion>2.2</wagonVersion>
+        <dynapathVersion>0.1.0</dynapathVersion>
     </properties>
 
     <dependencies>
@@ -66,6 +67,11 @@
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-aether-provider</artifactId>
             <version>${mavenVersion}</version>
+        </dependency>
+        <dependency>
+          <groupId>dynapath</groupId>
+          <artifactId>dynapath</artifactId>
+          <version>${dynapathVersion}</version>
         </dependency>
         
         <!-- wagons for dependency resolution -->
