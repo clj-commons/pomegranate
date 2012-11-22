@@ -34,7 +34,7 @@
         <aetherVersion>1.13.1</aetherVersion>
         <mavenVersion>3.0.4</mavenVersion>
         <wagonVersion>2.2</wagonVersion>
-        <dynapathVersion>0.1.0</dynapathVersion>
+        <dynapathVersion>0.2.0</dynapathVersion>
     </properties>
 
     <dependencies>

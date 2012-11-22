@@ -3,7 +3,7 @@
            (java.net URL URLClassLoader))
   (:require [clojure.java.io :as io]
             [cemerick.pomegranate.aether :as aether]
-            [dynapath.core :as dp])
+            [dynapath.util :as dp])
   (:refer-clojure :exclude (add-classpath)))
 
 ;; call-method pulled from clojure.contrib.reflect, (c) 2010 Stuart Halloway & Contributors
@@ -35,7 +35,8 @@
 
 (defn modifiable-classloader?
   "Returns true iff the given ClassLoader is of a type that satisfies
-   the dynapath.core/DynamicClasspath protocol, and it can be modified."
+   the dynapath.dynamic-classpath/DynamicClasspath protocol, and it can
+   be modified."
   [cl]
   (dp/addable-classpath? cl))
 
@@ -45,8 +46,7 @@
    to add that path to the right classloader (with the search rooted at the current
    thread's context classloader)."
   ([jar-or-dir classloader]
-     (if (modifiable-classloader? classloader)
-       (dp/add-classpath-url classloader (.toURL (io/file jar-or-dir)))
+     (if-not (dp/add-classpath-url classloader (.toURL (io/file jar-or-dir)))
        (throw (IllegalStateException. (str classloader " is not a modifiable classloader")))))
   ([jar-or-dir]
     (let [classloaders (classloader-hierarchy)]
@@ -89,7 +89,7 @@
   ([classloaders]
     []
     (->> (reverse classloaders)
-      (mapcat #(when (dp/readable-classpath? %) (dp/classpath-urls %)))
+      (mapcat #(dp/classpath-urls %))
       (map str)))
   ([] (get-classpath (classloader-hierarchy))))
 
