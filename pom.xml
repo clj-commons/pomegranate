@@ -28,20 +28,13 @@
         <url>git@github.com:cemerick/pomegranate.git</url>
     </scm>
 
-    <repositories>
-      <repository>
-        <id>clojars.org</id>
-        <url>http://clojars.org/repo</url>
-      </repository>
-    </repositories>
-    
     <properties>
         <clojure.version>1.3.0</clojure.version>
 
         <aetherVersion>1.13.1</aetherVersion>
         <mavenVersion>3.0.4</mavenVersion>
         <wagonVersion>2.2</wagonVersion>
-        <dynapathVersion>0.2.0</dynapathVersion>
+        <dynapathVersion>0.2.1</dynapathVersion>
     </properties>
 
     <dependencies>
@@ -76,7 +69,7 @@
             <version>${mavenVersion}</version>
         </dependency>
         <dependency>
-          <groupId>dynapath</groupId>
+          <groupId>org.tcrawley</groupId>
           <artifactId>dynapath</artifactId>
           <version>${dynapathVersion}</version>
         </dependency>
