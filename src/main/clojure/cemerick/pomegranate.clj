@@ -114,9 +114,32 @@ unless you are extending a type to this protocol."
 
    (get-classpath (drop 2 (classloader-hierarchy)))"
   ([classloaders]
-    []
     (->> (reverse classloaders)
       (mapcat #(when (instance? URLClassLoader %) (.getURLs %)))
       (map str)))
   ([] (get-classpath (classloader-hierarchy))))
 
+(defn classloader-resources
+  "Returns a sequence of [classloader url-seq] pairs representing all
+   of the resources of the specified name on the classpath of each
+   classloader. If no classloaders are given, uses the
+   classloader-heirarchy, in which case the order of pairs will be
+   such that the first url mentioned will in most circumstances match
+   what clojure.java.io/resource returns."
+  ([classloaders resource-name]
+     (for [classloader (reverse classloaders)]
+       [classloader
+        (map str
+             (enumeration-seq
+              (.getResources ^ClassLoader classloader resource-name)))]))
+  ([resource-name] (classloader-resources (classloader-hierarchy) resource-name)))
+
+(defn resources
+  "Returns a sequence of URLs representing all of the resources of the
+   specified name on the effective classpath. This can be useful for
+   finding name collisions among items on the classpath. In most
+   circumstances, the first of the returned sequence will be the same
+   as what clojure.java.io/resource returns."
+  ([classloaders resource-name]
+     (distinct (map second (classloader-resources classloaders resource-name))))
+  ([resource-name] (resources (classloader-hierarchy) resource-name)))
