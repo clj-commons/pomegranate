@@ -53,10 +53,9 @@ unless you are extending a type to this protocol."
 
 (defn classloader-hierarchy
   "Returns a seq of classloaders, with the tip of the hierarchy first.
-   Uses (clojure.lang.RT/baseLoader) -- which by default will be the
-   current thread context ClassLoader -- as the tip ClassLoader if one is
-   not provided."
-  ([] (classloader-hierarchy (clojure.lang.RT/baseLoader)))
+   Uses the current thread context ClassLoader as the tip ClassLoader
+   if one is not provided."
+  ([] (classloader-hierarchy (.. Thread currentThread getContextClassLoader)))
   ([tip]
     (->> tip
       (iterate #(.getParent %))
