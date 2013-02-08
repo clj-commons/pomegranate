@@ -275,11 +275,12 @@
 (defn deploy-artifacts
   "Deploy the artifacts kwarg to the repository kwarg.
 
-  :artifacts - a seq of artifact vectors, e.g. '[[group/artifact \"1.0.0\"]] or
-               '[[group/artifact \"1.0.0\"] [group/artifact \"1.0.0\" :extension \"pom\"]].
-               All artifacts should have the same version and group and artifact IDs.
   :files - map from artifact vectors to file paths or java.io.File objects
            where the file to be deployed for each artifact is to be found
+           An artifact vector is e.g.
+             '[group/artifact \"1.0.0\"] or
+             '[group/artifact \"1.0.0\" :extension \"pom\"].
+           All artifacts should have the same version and group and artifact IDs
   :repository - {name url} | {name settings}
     settings:
       :url - URL of the repository
@@ -304,42 +305,52 @@
     :passphrase - passphrase to log in wth, may be null
     :private-key-file - private key file to log in with, may be null"
 
-  [& {:keys [artifacts files repository local-repo transfer-listener proxy]}]
-  (when (or (empty? artifacts) (empty? files))
-    (throw (IllegalArgumentException. "Must provide valid :artifacts and :files to deploy-artifacts")))
-  (when (->> artifacts
+  [& {:keys [files repository local-repo transfer-listener proxy]}]
+  (when (empty? files)
+    (throw (IllegalArgumentException. "Must provide valid :files to deploy-artifacts")))
+  (when (->> (keys files)
           (map (fn [[ga v]] [(if (namespace ga) ga (symbol (str ga) (str ga))) v]))
           set
           count
           (< 1))
     (throw (IllegalArgumentException.
-             (str "Provided artifacts have varying version, group, or artifact IDs: " artifacts))))
+             (str "Provided artifacts have varying version, group, or artifact IDs: " (keys files)))))
   (let [system (repository-system)
         session (repository-session system local-repo false transfer-listener nil)]
     (.deploy system session
              (doto (DeployRequest.)
-               (.setArtifacts (vec (map (partial create-artifact files) artifacts)))
+               (.setArtifacts (vec (map (partial create-artifact files) (keys files))))
                (.setRepository (first (map #(make-repository % proxy) repository)))))))
 
 (defn install-artifacts
   "Deploy the file kwarg using the coordinates kwarg to the repository kwarg.
 
-  :artifacts - same as with deploy-artifacts
   :files - same as with deploy-artifacts
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies"
-  [& {:keys [artifacts files local-repo transfer-listener]}]
+  [& {:keys [files local-repo transfer-listener]}]
   (let [system (repository-system)
         session (repository-session system local-repo false transfer-listener nil)]
     (.install system session
               (doto (InstallRequest.)
-                (.setArtifacts (vec (map (partial create-artifact files) artifacts)))))))
+                (.setArtifacts (vec (map (partial create-artifact files) (keys files))))))))
+
+(defn- artifacts-for
+  "Takes a coordinates map, an a map from partial coordinates to "
+  [coordinates file-map]
+  (zipmap (map (partial into coordinates) (keys file-map)) (vals file-map)))
+
+(defn- optional-artifact
+  "Takes a coordinates map, an a map from partial coordinates to "
+  [artifact-coords path]
+  (when path {artifact-coords path}))
 
 (defn deploy
   "Deploy the jar-file kwarg using the pom-file kwarg and coordinates
 kwarg to the repository kwarg.
 
   :coordinates - [group/name \"version\"]
+  :artifact-map - a map from partial coordinates to file path or File
   :jar-file - a file pointing to the jar
   :pom-file - a file pointing to the pom
   :repository - {name url} | {name settings}
@@ -366,33 +377,41 @@ kwarg to the repository kwarg.
     :password - password to log in with, may be null
     :passphrase - passphrase to log in wth, may be null
     :private-key-file - private key file to log in with, may be null"
-  [& {:keys [coordinates jar-file pom-file] :as opts}]
+  [& {:keys [coordinates artifact-map jar-file pom-file] :as opts}]
+  (when (empty? coordinates)
+    (throw
+     (IllegalArgumentException. "Must provide valid :coordinates to deploy")))
   (apply deploy-artifacts
     (apply concat (assoc opts
-                    :artifacts (if pom-file
-                                 [coordinates (into coordinates [:extension "pom"])]
-                                 [coordinates])
-                    :files (merge {coordinates jar-file}
-                             (when pom-file
-                               {(into coordinates [:extension "pom"]) pom-file}))))))
+                    :files (artifacts-for
+                            coordinates
+                            (merge
+                             artifact-map
+                             (optional-artifact [:extension "pom"] pom-file)
+                             (optional-artifact [] jar-file)))))))
 
 (defn install
-  "Install the jar-file kwarg using the pom-file kwarg and coordinates kwarg.
+  "Install the artifacts specified by the jar-file or file-map and pom-file
+   kwargs using the coordinates kwarg.
 
   :coordinates - [group/name \"version\"]
+  :artifact-map - a map from partial coordinates to file path or File
   :jar-file - a file pointing to the jar
   :pom-file - a file pointing to the pom
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies"
-  [& {:keys [coordinates jar-file pom-file] :as opts}]
+  [& {:keys [coordinates artifact-map jar-file pom-file] :as opts}]
+  (when (empty? coordinates)
+    (throw
+     (IllegalArgumentException. "Must provide valid :coordinates to install")))
   (apply install-artifacts
     (apply concat (assoc opts
-                    :artifacts (if pom-file
-                                 [coordinates (into coordinates [:extension "pom"])]
-                                 [coordinates])
-                    :files (merge {coordinates jar-file}
-                             (when pom-file
-                               {(into coordinates [:extension "pom"]) pom-file}))))))
+                    :files (artifacts-for
+                            coordinates
+                            (merge
+                             artifact-map
+                             (optional-artifact [:extension "pom"] pom-file)
+                             (optional-artifact [] jar-file)))))))
 
 (defn- dependency-graph
   ([node]
