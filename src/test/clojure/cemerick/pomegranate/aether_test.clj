@@ -150,11 +150,30 @@
                  :local-repo tmp-local-repo-dir)
   (is (= 6 (count (.list (io/file tmp-remote-repo-dir "group" "artifact" "1.0.0"))))))
 
+(deftest deploy-jar-with-artifact-map
+  (let [repo-file (partial io/file "test-repo" "demo" "demo" "1.0.0")]
+    (aether/deploy
+     :coordinates '[group/artifact "1.0.0"]
+     :artifact-map {[] (repo-file "demo-1.0.0.pom")
+                    [:extension "pom"] (repo-file "demo-1.0.0.pom")}
+     :repository tmp-remote-repo
+     :local-repo tmp-local-repo-dir))
+  (is (= 6 (count (.list (io/file tmp-remote-repo-dir "group" "artifact" "1.0.0"))))))
+
 (deftest install-jar
   (aether/install :coordinates '[group/artifact "1.0.0"]
                   :jar-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
                   :pom-file (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.pom")
                   :local-repo tmp-local-repo-dir)
+  (is (= 3 (count (.list (io/file tmp-local-repo-dir "group" "artifact" "1.0.0"))))))
+
+(deftest install-jar-with-artifact-map
+  (let [repo-file (partial io/file "test-repo" "demo" "demo" "1.0.0")]
+    (aether/install
+     :coordinates '[group/artifact "1.0.0"]
+     :artifact-map {[] (repo-file "demo-1.0.0.jar")
+                    [:extension "pom"] (repo-file "demo-1.0.0.pom")}
+     :local-repo tmp-local-repo-dir))
   (is (= 3 (count (.list (io/file tmp-local-repo-dir "group" "artifact" "1.0.0"))))))
 
 (deftest deploy-artifacts
@@ -253,9 +272,10 @@
          :local-repo tmp-local-repo-dir)))
   (is (thrown-with-msg? IllegalArgumentException #"Provided artifacts have varying version, group, or artifact IDs"
         (aether/deploy-artifacts
-          :artifacts '[[demo "1.0.0"]
-                       [demo "1.1.0" :extension "jar.asc"]]
-          :files {'[demo "1.0.0"] (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")}
+          :files {'[demo "1.0.0"]
+                  (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
+                  '[demo "1.1.0" :extension "jar.asc"]
+                  (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")}
          :repository tmp-remote-repo
          :local-repo tmp-local-repo-dir))))
 
