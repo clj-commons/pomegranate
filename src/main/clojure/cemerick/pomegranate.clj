@@ -86,9 +86,21 @@
 
    (get-classpath (drop 2 (classloader-hierarchy)))"
   ([classloaders]
-    []
     (->> (reverse classloaders)
       (mapcat #(dp/classpath-urls %))
       (map str)))
   ([] (get-classpath (classloader-hierarchy))))
 
+(defn find-resources
+  "Returns a sequence of URLs representing all of the resources of the
+   specified name on the effective classpath. This can be useful for
+   finding name collisions among items on the classpath. In most
+   circumstances, the first of the returned sequence will be the same
+   as what clojure.java.io/resource returns."
+  ([classloaders resource-name]
+     (->> (reverse classloaders)
+          (mapcat #(enumeration-seq
+                    (.getResources ^ClassLoader % resource-name)))
+          distinct
+          (map str)))
+  ([resource-name] (find-resources (classloader-hierarchy) resource-name)))
