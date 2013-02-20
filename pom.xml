@@ -34,7 +34,6 @@
         <aetherVersion>1.13.1</aetherVersion>
         <mavenVersion>3.0.4</mavenVersion>
         <wagonVersion>2.2</wagonVersion>
-        <dynapathVersion>0.2.1</dynapathVersion>
     </properties>
 
     <dependencies>
@@ -71,7 +70,7 @@
         <dependency>
           <groupId>org.tcrawley</groupId>
           <artifactId>dynapath</artifactId>
-          <version>${dynapathVersion}</version>
+          <version>0.2.1</version>
         </dependency>
         
         <!-- wagons for dependency resolution -->
