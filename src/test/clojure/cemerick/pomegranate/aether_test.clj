@@ -60,6 +60,13 @@
     
     (is (= hierarchy (aether/dependency-hierarchy deps graph)))))
 
+(deftest impl-detail-types
+  (let [args [:coordinates '[[commons-logging "1.1"]] :local-repo tmp-local-repo-dir]]
+    (is (instance? org.sonatype.aether.resolution.DependencyResult
+          (apply aether/resolve-dependencies* args)))
+    (is (instance? org.sonatype.aether.collection.CollectResult
+          (apply aether/resolve-dependencies* :retrieve false args)))))
+
 (deftest resolve-deps-with-proxy
   (let [deps (aether/resolve-dependencies :repositories test-remote-repo
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]

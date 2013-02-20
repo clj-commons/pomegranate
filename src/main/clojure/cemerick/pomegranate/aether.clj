@@ -471,11 +471,14 @@ kwarg to the repository kwarg.
           (.setRepositoryManager (boolean repo-manager))
           (.setContentType (or content-type "default"))))))))
 
-(defn resolve-dependencies
-  "Collects dependencies for the coordinates kwarg, using repositories from the repositories kwarg.
-   Returns a graph of dependencies; each dependency's metadata contains the source Aether
-   Dependency object, and the dependency's :file on disk.  Retrieval of dependencies
-   can be disabled by providing `:retrieve false` as a kwarg.
+(defn resolve-dependencies*
+  "Collects dependencies for the coordinates kwarg, using repositories from the
+   `:repositories` kwarg.
+   Retrieval of dependencies can be disabled by providing `:retrieve false` as a kwarg.
+   Returns an instance of either `org.sonatype.aether.collection.CollectResult` if
+   `:retrieve false` or `org.sonatype.aether.resolution.DependencyResult` if
+   `:retrieve true` (the default).  If you don't want to mess with the Aether
+   implmeentation classes, then use `resolve-dependencies` instead.   
 
     :coordinates - [[group/name \"version\" & settings] ..]
       settings:
@@ -554,20 +557,28 @@ kwarg to the repository kwarg.
                                             (.getPath (io/file local-file))})))
                        (dependency %)))
                vec)
-        collect-request
-        (CollectRequest. deps
-                         nil
-                         (vec (map #(let [repo (make-repository % proxy)]
-                                      (-> session
-                                          (.getMirrorSelector)
-                                          (.getMirror repo)
-                                          (or repo)))
-                                   repositories)))
-        _ (.setRequestContext collect-request "runtime")
-        result (if retrieve
-                 (.resolveDependencies system session (DependencyRequest. collect-request nil))
-                 (.collectDependencies system session collect-request))]
-    (-> result .getRoot dependency-graph)))
+        collect-request (doto (CollectRequest. deps
+                                nil
+                                (vec (map #(let [repo (make-repository % proxy)]
+                                             (-> session
+                                               (.getMirrorSelector)
+                                               (.getMirror repo)
+                                               (or repo)))
+                                       repositories)))
+                          (.setRequestContext "runtime"))]
+    (if retrieve
+      (.resolveDependencies system session (DependencyRequest. collect-request nil))
+      (.collectDependencies system session collect-request))))
+
+(defn resolve-dependencies
+  "Same as `resolve-dependencies*`, but returns a graph of dependencies; each
+   dependency's metadata contains the source Aether Dependency object, and
+   the dependency's :file on disk.  Please refer to `resolve-dependencies*` for details
+   on usage, or use it if you need access to Aether dependency resolution objects."
+  [& args]
+  (-> (apply resolve-dependencies* args)
+    .getRoot
+    dependency-graph))
 
 (defn dependency-files
   "Given a dependency graph obtained from `resolve-dependencies`, returns a seq of
