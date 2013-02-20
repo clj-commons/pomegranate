@@ -100,10 +100,8 @@
    what clojure.java.io/resource returns."
   ([classloaders resource-name]
      (for [classloader (reverse classloaders)]
-       [classloader
-        (map str
-             (enumeration-seq
-              (.getResources ^ClassLoader classloader resource-name)))]))
+       [classloader (enumeration-seq
+                      (.getResources ^ClassLoader classloader resource-name))]))
   ([resource-name] (classloader-resources (classloader-hierarchy) resource-name)))
 
 (defn resources
@@ -113,5 +111,5 @@
    circumstances, the first of the returned sequence will be the same
    as what clojure.java.io/resource returns."
   ([classloaders resource-name]
-     (distinct (map second (classloader-resources classloaders resource-name))))
+     (distinct (mapcat second (classloader-resources classloaders resource-name))))
   ([resource-name] (resources (classloader-hierarchy) resource-name)))
