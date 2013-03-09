@@ -120,8 +120,8 @@
 
     :else (TransferListenerProxy. (fn [_]))))
 
-(defn- repository-session
-  [repository-system local-repo offline? transfer-listener mirror-selector]
+(defn repository-session
+  [{:keys [repository-system local-repo offline? transfer-listener mirror-selector]}]
   (-> (MavenRepositorySystemSession.)
     (.setLocalRepositoryManager (.newLocalRepositoryManager repository-system
                                   (-> (io/file (or local-repo default-local-repo))
@@ -305,18 +305,23 @@
     :passphrase - passphrase to log in wth, may be null
     :private-key-file - private key file to log in with, may be null"
 
-  [& {:keys [files repository local-repo transfer-listener proxy]}]
+  [& {:keys [files repository local-repo transfer-listener proxy repository-session-fn]}]
   (when (empty? files)
     (throw (IllegalArgumentException. "Must provide valid :files to deploy-artifacts")))
   (when (->> (keys files)
-          (map (fn [[ga v]] [(if (namespace ga) ga (symbol (str ga) (str ga))) v]))
-          set
-          count
-          (< 1))
+             (map (fn [[ga v]] [(if (namespace ga) ga (symbol (str ga) (str ga))) v]))
+             set
+             count
+             (< 1))
     (throw (IllegalArgumentException.
-             (str "Provided artifacts have varying version, group, or artifact IDs: " (keys files)))))
+            (str "Provided artifacts have varying version, group, or artifact IDs: " (keys files)))))
   (let [system (repository-system)
-        session (repository-session system local-repo false transfer-listener nil)]
+        session ((or repository-session-fn
+                     repository-session)
+                 {:repository-system system
+                  :local-repo local-repo
+                  :offline? false
+                  :transfer-listener transfer-listener})]
     (.deploy system session
              (doto (DeployRequest.)
                (.setArtifacts (vec (map (partial create-artifact files) (keys files))))
@@ -328,9 +333,14 @@
   :files - same as with deploy-artifacts
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies"
-  [& {:keys [files local-repo transfer-listener]}]
+  [& {:keys [files local-repo transfer-listener repository-session-fn]}]
   (let [system (repository-system)
-        session (repository-session system local-repo false transfer-listener nil)]
+        session ((or repository-session-fn
+                     repository-session)
+                 {:repository-system system
+                  :local-repo local-repo
+                  :offline? false
+                  :transfer-listener transfer-listener})]
     (.install system session
               (doto (InstallRequest.)
                 (.setArtifacts (vec (map (partial create-artifact files) (keys files))))))))
@@ -534,20 +544,25 @@ kwarg to the repository kwarg.
                 matches preferred. Wildcard mirrors can be specified with
                 a match-all regex such as #\".+\".  Excluding a repository
                 from mirroring can be done by mapping a string or regex matching
-                the repository in question to nil. 
+                the repository in question to nil.
       settings include these keys, and all those supported by :repositories:
       :name         - name/id of the mirror
       :repo-manager - whether the mirror is a repository manager"
 
   [& {:keys [repositories coordinates files retrieve local-repo
-             transfer-listener offline? proxy mirrors]
+             transfer-listener offline? proxy mirrors repository-session-fn]
       :or {retrieve true}}]
   (let [repositories (or repositories maven-central)
         system (repository-system)
         mirror-selector-fn (memoize (partial mirror-selector-fn mirrors))
         mirror-selector (mirror-selector mirror-selector-fn proxy)
-        session (repository-session system local-repo
-                  offline? transfer-listener mirror-selector)
+        session ((or repository-session-fn
+                     repository-session)
+                 {:repository-system system
+                  :local-repo local-repo
+                  :offline? offline?
+                  :transfer-listener transfer-listener
+                  :mirror-selector mirror-selector})
         deps (->> coordinates
                (map #(if-let [local-file (get files %)]
                        (.setArtifact (dependency %)
