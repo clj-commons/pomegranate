@@ -15,7 +15,7 @@ Insofar as most useful Clojure libraries have dependencies, any reasonable imple
 Pomegranate is available in Maven central.  Add it to your Leiningen `project.clj`:
 
 ```clojure
-[com.cemerick/pomegranate "0.0.13"]
+[com.cemerick/pomegranate "0.2.0"]
 ```
 
 or to your Maven project's `pom.xml`:
@@ -24,7 +24,7 @@ or to your Maven project's `pom.xml`:
 <dependency>
   <groupId>com.cemerick</groupId>
   <artifactId>pomegranate</artifactId>
-  <version>0.0.13</version>
+  <version>0.2.0</version>
 </dependency>
 ```
 
@@ -93,6 +93,10 @@ abstractions and conventions.
 * options to retrieve a single artifact (e.g. for obtaining
   source/javadoc)
 * tests; there's halfway decent coverage, but nowhere near the kind of comprehensive combinatorial testing that maven dependency resolution demands
+
+## Changelog
+
+See the `CHANGES.md` file at the top level of the repo.
 
 ## Need Help?
 
