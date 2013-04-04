@@ -52,13 +52,27 @@
                      [logkit "1.0.1"] nil}}]
     (is (= graph (aether/resolve-dependencies :coordinates deps :retrieve false :local-repo tmp-local-repo-dir)))
     (is (not (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir))))
-    
+
     (doseq [[dep _] (aether/resolve-dependencies :coordinates deps :local-repo tmp-local-repo-dir)]
       (is (-> dep meta :file))
       (is (-> dep meta :file .exists)))
     (is (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir)))
-    
+
     (is (= hierarchy (aether/dependency-hierarchy deps graph)))))
+
+(deftest live-artifact-resolution
+  (let [deps '[[commons-logging "1.1"]]]
+    (is (= deps (aether/resolve-artifacts
+                 :coordinates deps :retrieve false
+                 :local-repo tmp-local-repo-dir)))
+    (is (not (some #(-> % .getName (.endsWith ".jar"))
+                   (file-seq tmp-local-repo-dir))))
+    (doseq [dep (aether/resolve-artifacts
+                     :coordinates deps :local-repo tmp-local-repo-dir)]
+      (is (-> dep meta :file))
+      (is (-> dep meta :file .exists)))
+    (is (some #(-> % .getName (.endsWith ".jar"))
+              (file-seq tmp-local-repo-dir)))))
 
 (deftest impl-detail-types
   (let [args [:coordinates '[[commons-logging "1.1"]] :local-repo tmp-local-repo-dir]]
