@@ -80,9 +80,9 @@
 
 (deftest impl-detail-types
   (let [args [:coordinates '[[commons-logging "1.1"]] :local-repo tmp-local-repo-dir]]
-    (is (instance? org.sonatype.aether.resolution.DependencyResult
+    (is (instance? org.eclipse.aether.resolution.DependencyResult
           (apply aether/resolve-dependencies* args)))
-    (is (instance? org.sonatype.aether.collection.CollectResult
+    (is (instance? org.eclipse.aether.collection.CollectResult
           (apply aether/resolve-dependencies* :retrieve false args)))))
 
 (deftest resolve-deps-with-proxy
@@ -393,7 +393,7 @@
            "demo-1.0.0.pom"
            "demo-1.0.0.jar.asc"
            "demo-1.0.0.pom.asc"
-           "_maven.repositories"}
+           "_remote.repositories"}
          (set (.list (io/file tmp-local-repo-dir "demo" "demo" "1.0.0"))))))
 
 (deftest deploy-exceptions

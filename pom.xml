@@ -31,34 +31,39 @@
     <properties>
         <clojure.version>1.3.0</clojure.version>
 
-        <aetherVersion>1.13.1</aetherVersion>
-        <mavenVersion>3.0.4</mavenVersion>
+        <aetherVersion>0.9.0.M2</aetherVersion>
+        <mavenVersion>3.1.0</mavenVersion>
         <wagonVersion>2.2</wagonVersion>
     </properties>
 
     <dependencies>
         <dependency>
-            <groupId>org.sonatype.aether</groupId>
+            <groupId>org.eclipse.aether</groupId>
             <artifactId>aether-api</artifactId>
             <version>${aetherVersion}</version>
         </dependency>
         <dependency>
-            <groupId>org.sonatype.aether</groupId>
+            <groupId>org.eclipse.aether</groupId>
+            <artifactId>aether-spi</artifactId>
+            <version>${aetherVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.aether</groupId>
             <artifactId>aether-util</artifactId>
             <version>${aetherVersion}</version>
         </dependency>
         <dependency>
-            <groupId>org.sonatype.aether</groupId>
+            <groupId>org.eclipse.aether</groupId>
             <artifactId>aether-impl</artifactId>
             <version>${aetherVersion}</version>
         </dependency>
         <dependency>
-            <groupId>org.sonatype.aether</groupId>
+            <groupId>org.eclipse.aether</groupId>
             <artifactId>aether-connector-file</artifactId>
             <version>${aetherVersion}</version>
         </dependency>
         <dependency>
-            <groupId>org.sonatype.aether</groupId>
+            <groupId>org.eclipse.aether</groupId>
             <artifactId>aether-connector-wagon</artifactId>
             <version>${aetherVersion}</version>
             <exclusions>
@@ -69,7 +74,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.apache.maven</groupId>
+            <groupId>io.tesla.maven</groupId>
             <artifactId>maven-aether-provider</artifactId>
             <version>${mavenVersion}</version>
         </dependency>
@@ -78,7 +83,6 @@
           <artifactId>dynapath</artifactId>
           <version>0.2.5</version>
         </dependency>
-
         <!-- wagons for dependency resolution -->
         <dependency>
           <groupId>org.apache.maven.wagon</groupId>
