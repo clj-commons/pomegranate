@@ -16,7 +16,8 @@
            (org.sonatype.aether.util.repository DefaultProxySelector DefaultMirrorSelector)
            (org.sonatype.aether.graph Dependency Exclusion DependencyNode)
            (org.sonatype.aether.collection CollectRequest)
-           (org.sonatype.aether.resolution DependencyRequest ArtifactRequest)
+           (org.sonatype.aether.resolution DependencyRequest ArtifactRequest
+                                           ArtifactResult VersionRequest)
            (org.sonatype.aether.util.graph PreorderNodeListGenerator)
            (org.sonatype.aether.util.artifact DefaultArtifact SubArtifact
                                               ArtifactProperties)
@@ -211,13 +212,17 @@
     [spec]
     spec))
 
+(defn- artifact
+  [[group-artifact version & {:keys [scope optional exclusions]} :as dep-spec]]
+  (DefaultArtifact. (coordinate-string dep-spec)))
+
 (defn- dependency
   [[group-artifact version & {:keys [scope optional exclusions]
                               :as opts
                               :or {scope "compile"
                                    optional false}}
     :as dep-spec]]
-  (Dependency. (DefaultArtifact. (coordinate-string dep-spec))
+  (Dependency. (artifact dep-spec)
                scope
                optional
                (map (comp exclusion normalize-exclusion-spec) exclusions)))
@@ -480,6 +485,134 @@ kwarg to the repository kwarg.
         (-> (.setMirroredRepositories mirror [repo])
           (.setRepositoryManager (boolean repo-manager))
           (.setContentType (or content-type "default"))))))))
+
+(defn resolve-artifacts*
+  "Resolves artifacts for the coordinates kwarg, using repositories from the
+   `:repositories` kwarg.
+
+   Retrieval of dependencies can be disabled by providing `:retrieve false` as a
+   kwarg.
+
+   Returns an sequence of either `org.sonatype.aether.VersionResult`
+   if `:retrieve false`, or `org.sonatype.aether.ArtifactResult` if
+   `:retrieve true` (the default).
+
+   If you don't want to mess with the Aether implementation classes, then use
+   `resolve-artifacts` instead.
+
+    :coordinates - [[group/name \"version\" & settings] ..]
+      settings:
+      :extension  - the maven extension (type) to require
+      :classifier - the maven classifier to require
+      :scope      - the maven scope for the dependency (default \"compile\")
+      :optional   - is the dependency optional? (default \"false\")
+      :exclusions - which sub-dependencies to skip : [group/name & settings]
+        settings:
+        :classifier (default \"*\")
+        :extension  (default \"*\")
+
+    :repositories - {name url ..} | {name settings ..}
+      (defaults to {\"central\" \"http://repo1.maven.org/maven2/\"}
+      settings:
+      :url - URL of the repository
+      :snapshots - use snapshots versions? (default true)
+      :releases - use release versions? (default true)
+      :username - username to log in with
+      :password - password to log in with
+      :passphrase - passphrase to log in wth
+      :private-key-file - private key file to log in with
+      :update - :daily (default) | :always | :never
+      :checksum - :fail (default) | :ignore | :warn
+
+    :local-repo - path to the local repository (defaults to ~/.m2/repository)
+    :offline? - if true, no remote repositories will be contacted
+    :transfer-listener - the transfer listener that will be notifed of dependency
+      resolution and deployment events.
+      Can be:
+        - nil (the default), i.e. no notification of events
+        - :stdout, corresponding to a default listener implementation that writes
+            notifications and progress indicators to stdout, suitable for an
+            interactive console program
+        - a function of one argument, which will be called with a map derived from
+            each event.
+        - an instance of org.sonatype.aether.transfer.TransferListener
+
+    :proxy - proxy configuration, can be nil, the host scheme and type must match
+      :host - proxy hostname
+      :type - http  (default) | http | https
+      :port - proxy port
+      :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
+      :username - username to log in with, may be null
+      :password - password to log in with, may be null
+      :passphrase - passphrase to log in wth, may be null
+      :private-key-file - private key file to log in with, may be null
+
+    :mirrors - {matches settings ..}
+      matches - a string or regex that will be used to match the mirror to
+                candidate repositories. Attempts will be made to match the
+                string/regex to repository names and URLs, with exact string
+                matches preferred. Wildcard mirrors can be specified with
+                a match-all regex such as #\".+\".  Excluding a repository
+                from mirroring can be done by mapping a string or regex matching
+                the repository in question to nil.
+      settings include these keys, and all those supported by :repositories:
+      :name         - name/id of the mirror
+      :repo-manager - whether the mirror is a repository manager"
+
+  [& {:keys [repositories coordinates files retrieve local-repo
+             transfer-listener offline? proxy mirrors repository-session-fn]
+      :or {retrieve true}}]
+  (let [repositories (or repositories maven-central)
+        system (repository-system)
+        mirror-selector-fn (memoize (partial mirror-selector-fn mirrors))
+        mirror-selector (mirror-selector mirror-selector-fn proxy)
+        session ((or repository-session-fn
+                     repository-session)
+                 {:repository-system system
+                  :local-repo local-repo
+                  :offline? offline?
+                  :transfer-listener transfer-listener
+                  :mirror-selector mirror-selector})
+        deps (->> coordinates
+                  (map #(if-let [local-file (get files %)]
+                          (.setArtifact
+                           (artifact %)
+                           (-> (artifact %)
+                               .getArtifact
+                               (.setProperties
+                                {ArtifactProperties/LOCAL_PATH
+                                 (.getPath (io/file local-file))})))
+                          (artifact %)))
+                  vec)
+        repositories (vec (map #(let [repo (make-repository % proxy)]
+                                  (-> session
+                                      (.getMirrorSelector)
+                                      (.getMirror repo)
+                                      (or repo)))
+                               repositories))]
+    (if retrieve
+      (.resolveArtifacts
+       system session (map #(ArtifactRequest. % repositories nil) deps))
+      (doall
+       (for [dep deps]
+         (.resolveVersion
+          system session (VersionRequest. dep repositories nil)))))))
+
+(defn resolve-artifacts
+  "Same as `resolve-artifacts*`, but returns a sequence of dependencies; each
+   artifact's metadata contains the source Aether result object, and the
+   artifact's :file on disk."
+  [& args]
+  (let [{:keys [coordinates]} (apply hash-map args)]
+    (->> (apply resolve-artifacts* args)
+         (map
+          (fn [coord result]
+            {:pre [coord result]}
+            (let [m (when (instance? ArtifactResult result)
+                      {:file (.. ^ArtifactResult result getArtifact getFile)})]
+              (with-meta coord
+                (merge {:result result} m))))
+          coordinates))))
 
 (defn resolve-dependencies*
   "Collects dependencies for the coordinates kwarg, using repositories from the
