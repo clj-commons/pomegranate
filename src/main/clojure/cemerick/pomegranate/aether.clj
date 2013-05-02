@@ -3,26 +3,25 @@
   (:require [clojure.java.io :as io]
             clojure.set
             [clojure.string :as str])
-  (:import (org.apache.maven.repository.internal DefaultServiceLocator MavenRepositorySystemSession)
-           (org.sonatype.aether RepositorySystem)
-           (org.sonatype.aether.transfer TransferListener)
-           (org.sonatype.aether.artifact Artifact)
-           (org.sonatype.aether.connector.file FileRepositoryConnectorFactory)
-           (org.sonatype.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
-           (org.sonatype.aether.spi.connector RepositoryConnectorFactory)
-           (org.sonatype.aether.repository Proxy ArtifactRepository Authentication
-                                           RepositoryPolicy LocalRepository RemoteRepository
+  (:import (org.eclipse.aether RepositorySystem)
+           (org.eclipse.aether.transfer TransferListener)
+           (org.eclipse.aether.artifact Artifact)
+           (org.eclipse.aether.connector.file FileRepositoryConnectorFactory)
+           (org.eclipse.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
+           (org.eclipse.aether.spi.connector RepositoryConnectorFactory)
+           (org.eclipse.aether.repository Proxy ArtifactRepository Authentication
+                                           RepositoryPolicy LocalRepository RemoteRepository RemoteRepository$Builder
                                            MirrorSelector)
-           (org.sonatype.aether.util.repository DefaultProxySelector DefaultMirrorSelector)
-           (org.sonatype.aether.graph Dependency Exclusion DependencyNode)
-           (org.sonatype.aether.collection CollectRequest)
-           (org.sonatype.aether.resolution DependencyRequest ArtifactRequest)
-           (org.sonatype.aether.util.graph PreorderNodeListGenerator)
-           (org.sonatype.aether.util.artifact DefaultArtifact SubArtifact
-                                              ArtifactProperties)
-           (org.sonatype.aether.deployment DeployRequest)
-           (org.sonatype.aether.installation InstallRequest)
-           (org.sonatype.aether.util.version GenericVersionScheme)))
+           (org.eclipse.aether.util.repository DefaultProxySelector DefaultMirrorSelector  AuthenticationBuilder)
+           (org.eclipse.aether.graph Dependency Exclusion DependencyNode)
+           (org.eclipse.aether.collection CollectRequest)
+           (org.eclipse.aether.resolution DependencyRequest ArtifactRequest)
+           (org.eclipse.aether.util.graph.visitor PreorderNodeListGenerator)
+           (org.eclipse.aether.artifact DefaultArtifact ArtifactProperties)
+           (org.eclipse.aether.util.artifact SubArtifact)
+           (org.eclipse.aether.deployment DeployRequest)
+           (org.eclipse.aether.installation InstallRequest)
+           (org.eclipse.aether.util.version GenericVersionScheme)))
 
 (def ^{:private true} default-local-repo
   (io/file (System/getProperty "user.home") ".m2" "repository"))
@@ -66,7 +65,7 @@
   (transferSucceeded [_ e] (listener-fn e)))
 
 (defn- transfer-event
-  [^org.sonatype.aether.transfer.TransferEvent e]
+  [^org.eclipse.aether.transfer.TransferEvent e]
   ; INITIATED, STARTED, PROGRESSED, CORRUPTED, SUCCEEDED, FAILED
   {:type (-> e .getType .name str/lower-case keyword)
    ; :get :put
@@ -101,11 +100,12 @@
 
 (defn- repository-system
   []
-  (.getService (doto (DefaultServiceLocator.)
-                 (.addService RepositoryConnectorFactory FileRepositoryConnectorFactory)
-                 (.addService RepositoryConnectorFactory WagonRepositoryConnectorFactory)
-                 (.addService WagonProvider PomegranateWagonProvider))
-               org.sonatype.aether.RepositorySystem))
+  (.getService
+   (doto (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newServiceLocator)
+     (.setService WagonProvider PomegranateWagonProvider)
+     (.addService RepositoryConnectorFactory FileRepositoryConnectorFactory)
+     (.addService RepositoryConnectorFactory WagonRepositoryConnectorFactory))
+   RepositorySystem))
 
 (defn- construct-transfer-listener
   [transfer-listener]
@@ -122,14 +122,16 @@
 
 (defn repository-session
   [{:keys [repository-system local-repo offline? transfer-listener mirror-selector]}]
-  (-> (MavenRepositorySystemSession.)
-    (.setLocalRepositoryManager (.newLocalRepositoryManager repository-system
-                                  (-> (io/file (or local-repo default-local-repo))
-                                    .getAbsolutePath
-                                    LocalRepository.)))
-    (.setMirrorSelector mirror-selector)
-    (.setOffline (boolean offline?))
-    (.setTransferListener (construct-transfer-listener transfer-listener))))
+  (let [session (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newSession)]
+    (doto session
+      (.setLocalRepositoryManager (.newLocalRepositoryManager
+                                   repository-system
+                                   session
+                                   (LocalRepository.
+                                    (io/file (or local-repo default-local-repo)))))
+      (.setMirrorSelector mirror-selector)
+      (.setOffline (boolean offline?))
+      (.setTransferListener (construct-transfer-listener transfer-listener)))))
 
 (def update-policies {:daily RepositoryPolicy/UPDATE_POLICY_DAILY
                       :always RepositoryPolicy/UPDATE_POLICY_ALWAYS
@@ -149,39 +151,47 @@
 (defn- set-policies
   [repo settings]
   (doto repo
-    (.setPolicy true (policy settings (:snapshots settings true)))
-    (.setPolicy false (policy settings (:releases settings true)))))
+    (.setSnapshotPolicy (policy settings (:snapshots settings true)))
+    (.setReleasePolicy (policy settings (:releases settings true)))))
 
 (defn- set-authentication
   "Calls the setAuthentication method on obj"
   [obj {:keys [username password passphrase private-key-file] :as settings}]
   (if (or username password private-key-file passphrase)
-    (.setAuthentication obj (Authentication. username password private-key-file passphrase))
+    (doto obj
+      (.setAuthentication
+       (.build
+        (doto (AuthenticationBuilder.)
+          (.addUsername username)
+          (.addPassword password)
+          (.addPrivateKey private-key-file passphrase)))))
     obj))
 
 (defn- set-proxy 
-  [repo {:keys [type host port non-proxy-hosts ] 
-         :or {type "http"} 
-         :as proxy} ]
-  (if (and repo host port)
+  [repo-builder {:keys [type host port non-proxy-hosts ]
+                 :or {type "http"}
+                 :as proxy} ]
+  (if (and repo-builder host port)
     (let [prx-sel (doto (DefaultProxySelector.)
                     (.add (set-authentication (Proxy. type host port nil) proxy)
                           non-proxy-hosts))
-          prx (.getProxy prx-sel repo)]
-      (.setProxy repo prx))
-    repo))
+          prx (.getProxy prx-sel (.build repo-builder))] ; ugg.
+      ;; Don't know how to get around "building" the repo for this
+      (.setProxy repo-builder prx))
+    repo-builder))
 
 (defn- make-repository
   [[id settings] proxy]
   (let [settings-map (if (string? settings)
                        {:url settings}
                        settings)] 
-    (doto (RemoteRepository. id
-                             (:type settings-map "default")
-                             (str (:url settings-map)))
-      (set-policies settings-map)
-      (set-proxy proxy)
-      (set-authentication settings-map))))
+    (.build
+     (doto (RemoteRepository$Builder. id
+                                      (:type settings-map "default")
+                                      (str (:url settings-map)))
+       (set-policies settings-map)
+       (set-authentication settings-map)
+       (set-proxy proxy)))))
 
 (defn- group
   [group-artifact]
@@ -477,16 +487,19 @@ kwarg to the repository kwarg.
             {:keys [name repo-manager content-type] :as mirror-spec}
             (mirror-selector-fn repo-spec)]
         (when-let [mirror (and mirror-spec (make-repository [name mirror-spec] proxy))]
-        (-> (.setMirroredRepositories mirror [repo])
-          (.setRepositoryManager (boolean repo-manager))
-          (.setContentType (or content-type "default"))))))))
+         (-> (RemoteRepository$Builder. mirror)
+             (.setMirroredRepositories [repo])
+             (.setRepositoryManager (boolean repo-manager))
+             (.setContentType (or content-type "default"))
+         (.build)))))))
+
 
 (defn resolve-dependencies*
   "Collects dependencies for the coordinates kwarg, using repositories from the
    `:repositories` kwarg.
    Retrieval of dependencies can be disabled by providing `:retrieve false` as a kwarg.
-   Returns an instance of either `org.sonatype.aether.collection.CollectResult` if
-   `:retrieve false` or `org.sonatype.aether.resolution.DependencyResult` if
+   Returns an instance of either `org.eclipse.aether.collection.CollectResult` if
+   `:retrieve false` or `org.eclipse.aether.resolution.DependencyResult` if
    `:retrieve true` (the default).  If you don't want to mess with the Aether
    implmeentation classes, then use `resolve-dependencies` instead.   
 
@@ -525,7 +538,7 @@ kwarg to the repository kwarg.
             interactive console program
         - a function of one argument, which will be called with a map derived from
             each event.
-        - an instance of org.sonatype.aether.transfer.TransferListener
+        - an instance of org.eclipse.aether.transfer.TransferListener
 
     :proxy - proxy configuration, can be nil, the host scheme and type must match 
       :host - proxy hostname
