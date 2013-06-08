@@ -147,7 +147,7 @@
     (update-policies (:update policy-settings :daily))
     (checksum-policies (:checksum policy-settings :fail))))
 
-(defn- set-policies
+(defn- set-policies ^RemoteRepository
   [^RemoteRepository repo settings]
   (doto repo
     (.setPolicy true (policy settings (:snapshots settings true)))
@@ -155,12 +155,12 @@
 
 (defn- set-authentication
   "Calls the setAuthentication method on obj"
-  [^Proxy obj {:keys [^String username ^String password ^String passphrase ^String private-key-file] :as settings}]
+  [obj {:keys [^String username ^String password ^String passphrase ^String private-key-file] :as settings}]
   (if (or username password private-key-file passphrase)
     (.setAuthentication obj (Authentication. username password private-key-file passphrase))
     obj))
 
-(defn- set-proxy
+(defn- set-proxy ^RemoteRepository
   [^RemoteRepository repo {:keys [type host port non-proxy-hosts ]
          :or {type "http"}
          :as proxy} ]
