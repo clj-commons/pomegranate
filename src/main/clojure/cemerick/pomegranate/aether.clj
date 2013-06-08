@@ -4,7 +4,7 @@
             clojure.set
             [clojure.string :as str])
   (:import (org.apache.maven.repository.internal DefaultServiceLocator MavenRepositorySystemSession)
-           (org.sonatype.aether RepositorySystem)
+           (org.sonatype.aether RepositorySystem RepositorySystemSession)
            (org.sonatype.aether.transfer TransferListener)
            (org.sonatype.aether.artifact Artifact)
            (org.sonatype.aether.connector.file FileRepositoryConnectorFactory)
@@ -85,7 +85,7 @@
                 :trace (.getTrace r)})})
 
 (defn- default-listener-fn
-  [{:keys [type method transferred resource error] :as evt}]
+  [{:keys [type method transferred resource ^Throwable error] :as evt}]
   (let [{:keys [name size repository transfer-start-time]} resource]
     (case type
       :started (do
@@ -100,7 +100,7 @@
       (:corrupted :failed) (when error (println (.getMessage error)))
       nil)))
 
-(defn- repository-system
+(defn- repository-system ^RepositorySystem
   []
   (.getService (doto (DefaultServiceLocator.)
                  (.addService RepositoryConnectorFactory FileRepositoryConnectorFactory)
@@ -122,7 +122,7 @@
     :else (TransferListenerProxy. (fn [_]))))
 
 (defn repository-session
-  [{:keys [repository-system local-repo offline? transfer-listener mirror-selector]}]
+  [{:keys [^RepositorySystem repository-system local-repo offline? transfer-listener mirror-selector]}]
   (-> (MavenRepositorySystemSession.)
     (.setLocalRepositoryManager (.newLocalRepositoryManager repository-system
                                   (-> (io/file (or local-repo default-local-repo))
@@ -148,7 +148,7 @@
     (checksum-policies (:checksum policy-settings :fail))))
 
 (defn- set-policies
-  [repo settings]
+  [^RemoteRepository repo settings]
   (doto repo
     (.setPolicy true (policy settings (:snapshots settings true)))
     (.setPolicy false (policy settings (:releases settings true)))))
@@ -160,9 +160,9 @@
     (.setAuthentication obj (Authentication. username password private-key-file passphrase))
     obj))
 
-(defn- set-proxy 
-  [repo {:keys [type host port non-proxy-hosts ] 
-         :or {type "http"} 
+(defn- set-proxy
+  [^RemoteRepository repo {:keys [type host port non-proxy-hosts ]
+         :or {type "http"}
          :as proxy} ]
   (if (and repo host port)
     (let [prx-sel (doto (DefaultProxySelector.)
@@ -212,11 +212,11 @@
     [spec]
     spec))
 
-(defn- artifact
+(defn- artifact ^DefaultArtifact
   [[group-artifact version & {:keys [scope optional exclusions]} :as dep-spec]]
   (DefaultArtifact. (coordinate-string dep-spec)))
 
-(defn- dependency
+(defn- dependency ^Dependency
   [[group-artifact version & {:keys [scope optional exclusions]
                               :as opts
                               :or {scope "compile"
@@ -435,13 +435,13 @@ kwarg to the repository kwarg.
                 (update-in g [(dep-spec dep)]
                            clojure.set/union
                            (->> (.getChildren n)
-                             (map #(.getDependency %))
+                             (map #(.getDependency ^DependencyNode %))
                              (map dep-spec)
                              set))
                 g))
             {}
             (tree-seq (constantly true)
-                      #(seq (.getChildren %))
+                      #(seq (.getChildren ^DependencyNode %))
                       node))))
 
 (defn- mirror-selector-fn
@@ -481,7 +481,7 @@ kwarg to the repository kwarg.
             
             {:keys [name repo-manager content-type] :as mirror-spec}
             (mirror-selector-fn repo-spec)]
-        (when-let [mirror (and mirror-spec (make-repository [name mirror-spec] proxy))]
+        (when-let [^RemoteRepository mirror (and mirror-spec (make-repository [name mirror-spec] proxy))]
         (-> (.setMirroredRepositories mirror [repo])
           (.setRepositoryManager (boolean repo-manager))
           (.setContentType (or content-type "default"))))))))
@@ -566,7 +566,7 @@ kwarg to the repository kwarg.
         system (repository-system)
         mirror-selector-fn (memoize (partial mirror-selector-fn mirrors))
         mirror-selector (mirror-selector mirror-selector-fn proxy)
-        session ((or repository-session-fn
+        ^RepositorySystemSession session ((or repository-session-fn
                      repository-session)
                  {:repository-system system
                   :local-repo local-repo
@@ -686,7 +686,7 @@ kwarg to the repository kwarg.
         system (repository-system)
         mirror-selector-fn (memoize (partial mirror-selector-fn mirrors))
         mirror-selector (mirror-selector mirror-selector-fn proxy)
-        session ((or repository-session-fn
+        ^RepositorySystemSession session ((or repository-session-fn
                      repository-session)
                  {:repository-system system
                   :local-repo local-repo
@@ -702,8 +702,9 @@ kwarg to the repository kwarg.
                                             (.getPath (io/file local-file))})))
                        (dependency %)))
                vec)
-        collect-request (doto (CollectRequest. deps
+        collect-request (doto (CollectRequest. ^java.util.List deps
                                 nil
+                                ^java.util.List
                                 (vec (map #(let [repo (make-repository % proxy)]
                                              (-> session
                                                (.getMirrorSelector)
