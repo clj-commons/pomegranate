@@ -155,7 +155,7 @@
 
 (defn- set-authentication
   "Calls the setAuthentication method on obj"
-  [obj {:keys [username password passphrase private-key-file] :as settings}]
+  [^Proxy obj {:keys [^String username ^String password ^String passphrase ^String private-key-file] :as settings}]
   (if (or username password private-key-file passphrase)
     (.setAuthentication obj (Authentication. username password private-key-file passphrase))
     obj))
