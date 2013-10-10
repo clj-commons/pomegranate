@@ -61,6 +61,12 @@
             <groupId>org.sonatype.aether</groupId>
             <artifactId>aether-connector-wagon</artifactId>
             <version>${aetherVersion}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -72,7 +78,7 @@
           <artifactId>dynapath</artifactId>
           <version>0.2.3</version>
         </dependency>
-        
+
         <!-- wagons for dependency resolution -->
         <dependency>
           <groupId>org.apache.maven.wagon</groupId>
