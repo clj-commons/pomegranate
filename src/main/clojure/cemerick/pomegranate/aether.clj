@@ -575,13 +575,10 @@ kwarg to the repository kwarg.
                   :mirror-selector mirror-selector})
         deps (->> coordinates
                   (map #(if-let [local-file (get files %)]
-                          (.setArtifact
-                           (artifact %)
-                           (-> (artifact %)
-                               .getArtifact
-                               (.setProperties
-                                {ArtifactProperties/LOCAL_PATH
-                                 (.getPath (io/file local-file))})))
+                          (-> (artifact %)
+                              (.setProperties
+                               {ArtifactProperties/LOCAL_PATH
+                                (.getPath (io/file local-file))}))
                           (artifact %)))
                   vec)
         repositories (vec (map #(let [repo (make-repository % proxy)]
