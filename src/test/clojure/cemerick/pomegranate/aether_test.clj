@@ -65,6 +65,10 @@
     (is (= deps (aether/resolve-artifacts
                  :coordinates deps :retrieve false
                  :local-repo tmp-local-repo-dir)))
+    (is (= 1 (count (aether/resolve-artifacts
+                     :coordinates '[[demo "1.0.0"]] :retrieve false
+                     :files {'[demo "1.0.0"] (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")}
+                     :local-repo tmp-local-repo-dir))))
     (is (not (some #(-> % .getName (.endsWith ".jar"))
                    (file-seq tmp-local-repo-dir))))
     (doseq [dep (aether/resolve-artifacts
