@@ -45,7 +45,7 @@
    to add that path to the right classloader (with the search rooted at the current
    thread's context classloader)."
   ([jar-or-dir classloader]
-     (if-not (dp/add-classpath-url classloader (.toURL (io/file jar-or-dir)))
+     (if-not (dp/add-classpath-url classloader (.toURL (.toURI (io/file jar-or-dir))))
        (throw (IllegalStateException. (str classloader " is not a modifiable classloader")))))
   ([jar-or-dir]
     (let [classloaders (classloader-hierarchy)]
