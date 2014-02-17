@@ -2,7 +2,8 @@
   (:refer-clojure :exclude  [type proxy])
   (:require [clojure.java.io :as io]
             clojure.set
-            [clojure.string :as str])
+            [clojure.string :as str]
+            clojure.stacktrace)
   (:import (org.apache.maven.repository.internal DefaultServiceLocator MavenRepositorySystemSession)
            (org.sonatype.aether RepositorySystem)
            (org.sonatype.aether.transfer TransferListener)
@@ -55,7 +56,11 @@
   (release [_ wagon])
   (lookup [_ role-hint]
     (when-let [f (get @wagon-factories role-hint)]
-      (f))))
+      (try 
+        (f)
+        (catch Exception e
+          (clojure.stacktrace/print-cause-trace e)
+          (throw e))))))
 
 (deftype TransferListenerProxy [listener-fn]
   TransferListener
