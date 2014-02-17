@@ -1,5 +1,12 @@
 ## [Pomegranate](http://github.com/cemerick/pomegranate) changelog
 
+### [`0.3.0`](https://github.com/cemerick/pomegranate/issues?milestone=5&page=1&state=closed)
+
+* Added `cemerick.pomegranate.aether/resolve-artifacts`, which allows for the
+resolution of a sequence of artifacts, without doing transitive resolution on
+their dependencies. (gh-57)
+* Provide an error if a registered wagon factory fails to instantiate (gh-58)
+
 ### `0.2.0`
 
 _This release contains breaking changes from `0.1.3`_, though it's expected
