@@ -177,7 +177,7 @@
       (.setProxy repo prx))
     repo))
 
-(defn- make-repository
+(defn make-repository
   [[id settings] proxy]
   (let [settings-map (if (string? settings)
                        {:url settings}
@@ -221,7 +221,7 @@
   [[group-artifact version & {:keys [scope optional exclusions]} :as dep-spec]]
   (DefaultArtifact. (coordinate-string dep-spec)))
 
-(defn- dependency
+(defn dependency
   [[group-artifact version & {:keys [scope optional exclusions]
                               :as opts
                               :or {scope "compile"
