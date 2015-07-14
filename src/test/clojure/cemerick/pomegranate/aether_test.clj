@@ -18,6 +18,8 @@
 
 (def test-repo {"test-repo" "file://test-repo"})
 (def tmp-remote-repo {"tmp-remote-repo" (str "file://" tmp-remote-repo-dir)})
+;; aether no longer creates checksums when uploading signatures
+(def tmp-asc-remote-repo {"tmp-remote-repo" {:url (str "file://" tmp-remote-repo-dir) :checksum :ignore}})
 
 (defn delete-recursive
   [dir]
@@ -80,9 +82,9 @@
 
 (deftest impl-detail-types
   (let [args [:coordinates '[[commons-logging "1.1"]] :local-repo tmp-local-repo-dir]]
-    (is (instance? org.sonatype.aether.resolution.DependencyResult
+    (is (instance? org.eclipse.aether.resolution.DependencyResult
           (apply aether/resolve-dependencies* args)))
-    (is (instance? org.sonatype.aether.collection.CollectResult
+    (is (instance? org.eclipse.aether.collection.CollectResult
           (apply aether/resolve-dependencies* :retrieve false args)))))
 
 (deftest resolve-deps-with-proxy
@@ -217,14 +219,10 @@
   (is (= #{"demo-1.0.0.pom.md5"
            "demo-1.0.0.pom.sha1"
            "demo-1.0.0.pom"
-           "demo-1.0.0.pom.asc.md5"
-           "demo-1.0.0.pom.asc.sha1"
            "demo-1.0.0.pom.asc"
            "demo-1.0.0.jar.md5"
            "demo-1.0.0.jar.sha1"
            "demo-1.0.0.jar"
-           "demo-1.0.0.jar.asc.md5"
-           "demo-1.0.0.jar.asc.sha1"
            "demo-1.0.0.jar.asc"}
          (set (.list (io/file tmp-remote-repo-dir "demo" "demo" "1.0.0")))))
   (is (= '{[demo "1.0.0"] nil}
@@ -238,12 +236,12 @@
                                       '[[demo "1.0.0" :extension "pom"]]
                                       :local-repo tmp-local-repo2-dir)))
   (is (= '{[demo "1.0.0" :extension "jar.asc"] nil}
-         (aether/resolve-dependencies :repositories tmp-remote-repo
+         (aether/resolve-dependencies :repositories tmp-asc-remote-repo
                                       :coordinates
                                       '[[demo "1.0.0" :extension "jar.asc"]]
                                       :local-repo tmp-local-repo2-dir)))
   (is (= '{[demo "1.0.0" :extension "pom.asc"] nil}
-         (aether/resolve-dependencies :repositories tmp-remote-repo
+         (aether/resolve-dependencies :repositories tmp-asc-remote-repo
                                       :coordinates
                                       '[[demo "1.0.0" :extension "pom.asc"]]
                                       :local-repo tmp-local-repo2-dir))))
@@ -264,7 +262,7 @@
            "demo-1.0.0.pom"
            "demo-1.0.0.jar.asc"
            "demo-1.0.0.pom.asc"
-           "_maven.repositories"}
+           "_remote.repositories"}
          (set (.list (io/file tmp-local-repo-dir "demo" "demo" "1.0.0"))))))
 
 (deftest deploy-exceptions
