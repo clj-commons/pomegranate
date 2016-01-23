@@ -616,6 +616,54 @@ kwarg to the repository kwarg.
                 (merge {:result result} m))))
           coordinates))))
 
+
+(defn- add-version-from-managed-coord
+  "Given an entry from a coordinates vector, and the corresponding entry from the
+  managed coordinates vector, update the version number in the coordinate with the
+  value from the managed coordinate."
+  [coord managed-coord]
+  (if-let [managed-version (second managed-coord)]
+    (vec (concat [(first coord) managed-version]
+                 (nthrest coord 2)))
+    (throw (IllegalArgumentException. (str "Provided artifact is missing a version: " coord)))))
+
+(defn- find-managed-coord
+  "Given an entry from a coordinates vector, and a managed coordinates vector, find
+  the entry in the managed coordinates vector (if any) that matches the coordinate."
+  [coord managed-coords]
+  (first (filter #(= (first coord) (first %)) managed-coords)))
+
+(defn- add-version-from-managed-coords-if-missing
+  "Given a managed coordinates vector and an entry from a coordinates vector, check
+  to see if the coordinate specifies a version string, and if not, update it with
+  the version string from the managed coordinates (if it is defined)."
+  [managed-coords coord]
+  (if (nil? (second coord))
+    (add-version-from-managed-coord coord (find-managed-coord coord managed-coords))
+    coord))
+
+(defn- merge-versions-from-managed-coords
+  "Given a vector of coordinates (e.g. [[group/name <\"version\"> & settings] ..])
+  where the version field is optional or can be nil, and a vector of managed coordinates,
+  returns an updated vector of coordinates with version numbers merged in from the
+  managed-coordinates vector as necessary."
+  [coordinates managed-coordinates]
+  (vec (map (partial add-version-from-managed-coords-if-missing managed-coordinates)
+            coordinates)))
+
+(defn- coords->Dependencies
+  "Converts a coordinates vector to the maven representation, as Dependency objects."
+  [files coordinates]
+  (->> coordinates
+       (map #(if-let [local-file (get files %)]
+              (.setArtifact (dependency %)
+                            (-> (dependency %)
+                                .getArtifact
+                                (.setProperties {ArtifactProperties/LOCAL_PATH
+                                                 (.getPath (io/file local-file))})))
+              (dependency %)))
+       vec))
+
 (defn resolve-dependencies*
   "Collects dependencies for the coordinates kwarg, using repositories from the
    `:repositories` kwarg.
@@ -623,9 +671,9 @@ kwarg to the repository kwarg.
    Returns an instance of either `org.sonatype.aether.collection.CollectResult` if
    `:retrieve false` or `org.sonatype.aether.resolution.DependencyResult` if
    `:retrieve true` (the default).  If you don't want to mess with the Aether
-   implmeentation classes, then use `resolve-dependencies` instead.   
+   implementation classes, then use `resolve-dependencies` instead.
 
-    :coordinates - [[group/name \"version\" & settings] ..]
+    :coordinates - [[group/name <\"version\"> & settings] ..]
       settings:
       :extension  - the maven extension (type) to require
       :classifier - the maven classifier to require
@@ -635,6 +683,10 @@ kwarg to the repository kwarg.
         settings:
         :classifier (default \"*\")
         :extension  (default \"*\")
+
+    :managed-coordinates - [[group/name \"version\"] ..]
+      Used to determine version numbers for any entries in `:coordinates` that
+      don't explicitly specify them.
 
     :repositories - {name url ..} | {name settings ..}
       (defaults to {\"central\" \"http://repo1.maven.org/maven2/\"}
@@ -684,7 +736,7 @@ kwarg to the repository kwarg.
       :name         - name/id of the mirror
       :repo-manager - whether the mirror is a repository manager"
 
-  [& {:keys [repositories coordinates files retrieve local-repo
+  [& {:keys [repositories coordinates managed-coordinates files retrieve local-repo
              transfer-listener offline? proxy mirrors repository-session-fn]
       :or {retrieve true}}]
   (let [repositories (or repositories maven-central)
@@ -698,17 +750,11 @@ kwarg to the repository kwarg.
                   :offline? offline?
                   :transfer-listener transfer-listener
                   :mirror-selector mirror-selector})
-        deps (->> coordinates
-               (map #(if-let [local-file (get files %)]
-                       (.setArtifact (dependency %)
-                         (-> (dependency %)
-                           .getArtifact
-                           (.setProperties {ArtifactProperties/LOCAL_PATH
-                                            (.getPath (io/file local-file))})))
-                       (dependency %)))
-               vec)
+        coordinates (merge-versions-from-managed-coords coordinates managed-coordinates)
+        deps (coords->Dependencies files coordinates)
+        managed-deps (coords->Dependencies files managed-coordinates)
         collect-request (doto (CollectRequest. deps
-                                nil
+                                managed-deps
                                 (vec (map #(let [repo (make-repository % proxy)]
                                              (-> session
                                                (.getMirrorSelector)

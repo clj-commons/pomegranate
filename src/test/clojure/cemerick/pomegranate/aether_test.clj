@@ -151,6 +151,83 @@
     (is (= 1 (count files)))
     (is (= nil (:file (meta (first files)))))))
 
+(deftest resolve-managed-dependencies
+  (testing "supports coordinates w/o version number, with managed coordinates"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo]]
+                :managed-coordinates '[[demo/demo "1.0.0"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 1 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+                              files))))))
+  (testing "supports coordinates w/nil version number, with managed coordinates"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo nil]]
+                :managed-coordinates '[[demo/demo "1.0.0"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 1 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+                              files))))))
+  (testing "supports coordinates w/nil version number and kwargs, with managed coordinates"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo2 nil :exclusions [demo/demo]]]
+                :managed-coordinates '[[demo/demo2 "1.0.0"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 1 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
+                              files))))))
+  (testing "error if missing version number w/o managed coordinates"
+    (is (thrown-with-msg? IllegalArgumentException #"Provided artifact is missing a version: \[demo/demo\]"
+                          (aether/resolve-dependencies
+                           :repositories test-repo
+                           :coordinates '[[demo/demo]]
+                           :local-repo tmp-local-repo-dir))))
+  (testing "error if nil version number w/o managed coordinates"
+    (is (thrown-with-msg? IllegalArgumentException #"Provided artifact is missing a version: \[demo/demo nil\]"
+                          (aether/resolve-dependencies
+                           :repositories test-repo
+                           :coordinates '[[demo/demo nil]]
+                           :local-repo tmp-local-repo-dir))))
+  (testing "coordinates version number overrides managed coordinates version"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo "1.0.0"]]
+                :managed-coordinates '[[demo/demo "0.0.1"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 1 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+                              files))))))
+  (testing "managed coordinates version is honored for transitive deps"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo2 "1.0.0"]]
+                :managed-coordinates '[[demo/demo "1.0.1"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 2 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
+                              files))))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.1" "demo-1.0.1.jar"))
+                              files))))))
+  (testing "unused entries in managed coordinates are not resolved"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo]]
+                :managed-coordinates '[[demo/demo "1.0.0"]
+                                       [demo/demo2 "1.0.0"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 1 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+                              files)))))))
+
 (deftest resolve-deps-with-exclusions
   (let [deps (aether/resolve-dependencies :repositories test-repo
                                           :coordinates
