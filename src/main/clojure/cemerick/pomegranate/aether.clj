@@ -5,23 +5,19 @@
             [clojure.string :as str]
             clojure.stacktrace)
   (:import (org.apache.maven.repository.internal DefaultServiceLocator MavenRepositorySystemSession)
-           (org.sonatype.aether RepositorySystem)
            (org.sonatype.aether.transfer TransferListener)
-           (org.sonatype.aether.artifact Artifact)
            (org.sonatype.aether.connector.file FileRepositoryConnectorFactory)
            (org.sonatype.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
            (org.sonatype.aether.spi.connector RepositoryConnectorFactory)
-           (org.sonatype.aether.repository Proxy ArtifactRepository Authentication
+           (org.sonatype.aether.repository Proxy  Authentication
                                            RepositoryPolicy LocalRepository RemoteRepository
                                            MirrorSelector)
-           (org.sonatype.aether.util.repository DefaultProxySelector DefaultMirrorSelector)
+           (org.sonatype.aether.util.repository DefaultProxySelector)
            (org.sonatype.aether.graph Dependency Exclusion DependencyNode)
            (org.sonatype.aether.collection CollectRequest)
            (org.sonatype.aether.resolution DependencyRequest ArtifactRequest
                                            ArtifactResult VersionRequest)
-           (org.sonatype.aether.util.graph PreorderNodeListGenerator)
-           (org.sonatype.aether.util.artifact DefaultArtifact SubArtifact
-                                              ArtifactProperties)
+           (org.sonatype.aether.util.artifact DefaultArtifact ArtifactProperties)
            (org.sonatype.aether.deployment DeployRequest)
            (org.sonatype.aether.installation InstallRequest)
            (org.sonatype.aether.util.version GenericVersionScheme)))
