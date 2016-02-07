@@ -226,6 +226,16 @@
           files (aether/dependency-files deps)]
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+                              files))))))
+  (testing "exclusions in managed coordinates are honored"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo2]]
+                :managed-coordinates '[[demo/demo2 "1.0.0" :exclusions [demo/demo]]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 1 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
                               files)))))))
 
 (deftest resolve-deps-with-exclusions
