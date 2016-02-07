@@ -623,11 +623,25 @@ kwarg to the repository kwarg.
                  (nthrest coord 2)))
     (throw (IllegalArgumentException. (str "Provided artifact is missing a version: " coord)))))
 
+(defn- coordinates-match?
+  [[dep version & opts] [sdep sversion & sopts]]
+  (let [om (apply hash-map opts)
+        som (apply hash-map sopts)]
+    (and
+     (= (group dep)
+        (group sdep))
+     (= (name dep)
+        (name sdep))
+     (= (:extension om "jar")
+        (:extension som "jar"))
+     (= (:classifier om)
+        (:classifier som)))))
+
 (defn- find-managed-coord
   "Given an entry from a coordinates vector, and a managed coordinates vector, find
   the entry in the managed coordinates vector (if any) that matches the coordinate."
   [coord managed-coords]
-  (first (filter #(= (first coord) (first %)) managed-coords)))
+  (first (filter #(coordinates-match? coord %) managed-coords)))
 
 (defn- add-version-from-managed-coords-if-missing
   "Given a managed coordinates vector and an entry from a coordinates vector, check
@@ -804,17 +818,10 @@ kwarg to the repository kwarg.
   "Determines if the first coordinate would be a version in the second
    coordinate. The first coordinate is not allowed to contain a
    version range."
-  [[dep version & opts] [sdep sversion & sopts]]
+  [[dep version & opts :as coord] [sdep sversion & sopts :as scoord]]
   (let [om (apply hash-map opts)
         som (apply hash-map sopts)]
-    (and (= (group dep)
-            (group sdep))
-         (= (name dep)
-            (name sdep))
-         (= (:extension om "jar")
-            (:extension som "jar"))
-         (= (:classifier om)
-            (:classifier som))
+    (and (coordinates-match? coord scoord)
          (= (:scope om "compile")
             (:scope som "compile"))
          (= (:optional om false)

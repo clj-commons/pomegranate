@@ -151,11 +151,48 @@
     (is (= 1 (count files)))
     (is (= nil (:file (meta (first files)))))))
 
+(deftest resolve-deps-with-exclusions
+  (let [deps (aether/resolve-dependencies :repositories test-repo
+                                          :coordinates
+                                          '[[demo/demo2 "1.0.0" :exclusions [demo/demo]]]
+                                          :local-repo tmp-local-repo-dir)]
+    (is (= 1 (count deps)))
+    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
+           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+
+(deftest resolve-deps-with-classifiers
+  (let [deps (aether/resolve-dependencies :repositories test-repo
+                                          :coordinates
+                                          '[[demo/demo "1.0.1" :classifier "test"]]
+                                          :local-repo tmp-local-repo-dir)]
+    (is (= 1 (count deps)))
+    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo" "1.0.1" "demo-1.0.1-test.jar"))
+           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+
 (deftest resolve-managed-dependencies
   (testing "supports coordinates w/o version number, with managed coordinates"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo]]
+                :managed-coordinates '[[demo/demo "1.0.0"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 1 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+                              files))))))
+  (testing "supports coordinates w/o version number, with managed coordinates, w/o group-id"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo]]
+                :managed-coordinates '[[demo "1.0.0"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 1 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+                              files)))))
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo]]
                 :managed-coordinates '[[demo/demo "1.0.0"]]
                 :local-repo tmp-local-repo-dir)
           files (aether/dependency-files deps)]
@@ -236,16 +273,21 @@
           files (aether/dependency-files deps)]
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
+                              files))))))
+  (testing "classifiers in managed coordinates are honored"
+    (let [deps (aether/resolve-dependencies
+                :repositories test-repo
+                :coordinates '[[demo/demo]
+                               [demo/demo nil :classifier "test"]]
+                :managed-coordinates '[[demo/demo "1.0.0"]
+                                       [demo/demo "1.0.1" :classifier "test"]]
+                :local-repo tmp-local-repo-dir)
+          files (aether/dependency-files deps)]
+      (is (= 2 (count files)))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
+                              files))))
+      (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.1" "demo-1.0.1-test.jar"))
                               files)))))))
-
-(deftest resolve-deps-with-exclusions
-  (let [deps (aether/resolve-dependencies :repositories test-repo
-                                          :coordinates
-                                          '[[demo/demo2 "1.0.0" :exclusions [demo/demo]]]
-                                          :local-repo tmp-local-repo-dir)]
-    (is (= 1 (count deps)))
-    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
 
 (deftest deploy-jar
   (aether/deploy :coordinates '[group/artifact "1.0.0"]
