@@ -1,5 +1,9 @@
 ## [Pomegranate](http://github.com/cemerick/pomegranate) changelog
 
+### [`0.3.1`](https://github.com/cemerick/pomegranate/issues?q=milestone%3A0.3.1+is%3Aclosed)
+
+* Add support for "managed" dependencies in `resolve-dependencies` (gh-72)
+
 ### [`0.3.0`](https://github.com/cemerick/pomegranate/issues?milestone=5&page=1&state=closed)
 
 * Added `cemerick.pomegranate.aether/resolve-artifacts`, which allows for the
