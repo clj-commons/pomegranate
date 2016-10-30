@@ -612,17 +612,6 @@ kwarg to the repository kwarg.
                 (merge {:result result} m))))
           coordinates))))
 
-
-(defn- add-version-from-managed-coord
-  "Given an entry from a coordinates vector, and the corresponding entry from the
-  managed coordinates vector, update the version number in the coordinate with the
-  value from the managed coordinate."
-  [coord managed-coord]
-  (if-let [managed-version (second managed-coord)]
-    (vec (concat [(first coord) managed-version]
-                 (nthrest coord 2)))
-    (throw (IllegalArgumentException. (str "Provided artifact is missing a version: " coord)))))
-
 (defn- coordinates-match?
   [[dep version & opts] [sdep sversion & sopts]]
   (let [om (apply hash-map opts)
@@ -637,20 +626,60 @@ kwarg to the repository kwarg.
      (= (:classifier om)
         (:classifier som)))))
 
-(defn- find-managed-coord
-  "Given an entry from a coordinates vector, and a managed coordinates vector, find
-  the entry in the managed coordinates vector (if any) that matches the coordinate."
-  [coord managed-coords]
-  (first (filter #(coordinates-match? coord %) managed-coords)))
+(defn- coord-map-key
+  "Creates the unique key for the given coordinate map.  This is
+   essentially a representation of the full maven coordinate except
+   the version."
+  [{:keys [project extension classifier]}]
+  [project extension classifier])
 
-(defn- add-version-from-managed-coords-if-missing
-  "Given a managed coordinates vector and an entry from a coordinates vector, check
-  to see if the coordinate specifies a version string, and if not, update it with
-  the version string from the managed coordinates (if it is defined)."
-  [managed-coords coord]
-  (if (nil? (second coord))
-    (add-version-from-managed-coord coord (find-managed-coord coord managed-coords))
-    coord))
+(defn- canonical-id [id]
+  (apply symbol (distinct ((juxt group name) id))))
+
+(defn- conform-coord
+  "Returns a map describing the coordinate.  The full project ID is
+   under the :project key and the version, if specified and not nil,
+   under the :version key.  All other specified options appear with
+   the keys and values specified (including nil values)."
+  [[project & opts]]
+  (if project
+    (let [has-version? (odd? (count opts))
+          version (if has-version? (first opts))
+          opts (if has-version? (rest opts) opts)
+          opts-map (apply hash-map opts)]
+      (-> (if (and has-version? version) {:version version} {})
+          (assoc :project (canonical-id project))
+          (merge opts-map)))))
+
+(defn- strip-defaults [dep-map]
+  (remove #(or (some #{:project :version} %)
+               (= [:scope "compile"] %)
+               (= [:extension "jar"] %)
+               (= [:optional false] %)) dep-map))
+
+(defn- unform-coord
+  "Returns the canonical, vector form of a dependency that was
+   specified as a map."
+  [{:keys [project version] :as dep-map}]
+  (-> (if version [project version] [project])
+      (cons (strip-defaults dep-map))
+      ((partial mapcat identity))
+      (vec)))
+
+(defn- managed-coords-map [managed-coords]
+  (->> managed-coords
+       (map conform-coord)
+       (map (juxt coord-map-key identity))
+       (into {})))
+
+(defn- merge-managed-coord [managed-coords-m coord]
+  (let [coord-map (conform-coord coord)
+        coord-key (coord-map-key coord-map)
+        managed-coord (get managed-coords-m coord-key)
+        merged-map (merge managed-coord coord-map)]
+    (if (:version merged-map)
+      (unform-coord (into {} (remove (comp nil? second) merged-map)))
+      (throw (IllegalArgumentException. (str "Provided artifact is missing a version: " coord))))))
 
 (defn- merge-versions-from-managed-coords
   "Given a vector of coordinates (e.g. [[group/name <\"version\"> & settings] ..])
@@ -658,7 +687,7 @@ kwarg to the repository kwarg.
   returns an updated vector of coordinates with version numbers merged in from the
   managed-coordinates vector as necessary."
   [coordinates managed-coordinates]
-  (vec (map (partial add-version-from-managed-coords-if-missing managed-coordinates)
+  (vec (map (partial merge-managed-coord (managed-coords-map managed-coordinates))
             coordinates)))
 
 (defn- coords->Dependencies

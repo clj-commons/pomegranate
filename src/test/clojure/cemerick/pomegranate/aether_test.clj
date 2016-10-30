@@ -548,6 +548,70 @@
             ['tester "0.1.0-20120403.012847-1"] nil}
            (aether/dependency-hierarchy coords deps)))))
 
+(deftest check-canonical-id
+  (let [f @#'aether/canonical-id]
+    (are [expect input] (= expect (f input)))
+    'foo 'foo
+    'foo 'foo/foo
+    'foo/bar 'foo/bar))
+
+(deftest check-conform-coord
+  (let [f @#'aether/conform-coord]
+    (are [expect input] (= expect (f input))
+                        nil nil
+                        {:project 'foo} '[foo]
+                        {:project 'foo/bar} '[foo/bar]
+                        {:project 'foo} '[foo nil]
+                        {:project 'foo, :version "1.2.3"} '[foo "1.2.3"]
+                        {:project 'foo, :version "1.2.3", :scope "test"} '[foo "1.2.3" :scope "test"]
+                        {:project 'foo, :scope "test"} '[foo :scope "test"]
+                        {:project 'foo, :scope "test"} '[foo nil :scope "test"]
+                        {:project 'foo, :scope nil} '[foo nil :scope nil]
+                        {:project 'foo, :scope "test", :optional true} '[foo :scope "test" :optional true]
+                        {:project 'foo, :version "1.2.3" :exclusions '[[bar]]} '[foo "1.2.3" :exclusions [[bar]]])))
+
+(deftest check-unform-coord
+  (let [f @#'aether/unform-coord]
+    (are [expect input] (= expect (f input))
+                        '[foo] {:project 'foo}
+                        '[foo/bar] {:project 'foo/bar}
+                        '[foo "1.2.3"] {:project 'foo, :version "1.2.3"}
+                        '[foo "1.2.3" :scope "test"] {:project 'foo, :version "1.2.3", :scope "test"}
+                        '[foo :scope "test"] {:project 'foo, :scope "test"}
+                        '[foo :scope nil] {:project 'foo, :scope nil}
+
+                        '[foo :scope "test"] {:project 'foo, :scope "test"}
+                        '[foo] {:project 'foo, :scope "compile"}
+                        '[foo :optional true] {:project 'foo, :optional true}
+                        '[foo] {:project 'foo, :optional false}
+                        '[foo :extension "zip"] {:project 'foo, :extension "zip"}
+                        '[foo] {:project 'foo, :extension "jar"}
+
+                        '[foo "1.2.3" :exclusions [[bar]]] {:project 'foo, :version "1.2.3" :exclusions '[[bar]]})))
+
+(deftest check-merge-managed-coord
+  (let [f @#'aether/merge-managed-coord
+        managed-coords-map @#'aether/managed-coords-map
+        managed-coords-m (managed-coords-map
+                           '[[demo "1.0.0"]
+                             [demo-test "2.0.0" :scope "test"]
+                             [demo-compile "3.0.0" :scope "compile"]
+                             [demo-excl "4.0.0" :exclusions [[demo] [demo-test]]]])]
+    (is (thrown-with-msg? IllegalArgumentException #"Provided artifact is missing a version: "
+                          (f nil nil)))
+    (is (thrown-with-msg? IllegalArgumentException #"Provided artifact is missing a version: \[demo-unk\]"
+                                                                      (f nil '[demo-unk])))
+    (is (= '[demo "1.0.0"] (f nil '[demo/demo "1.0.0"])))
+    (is (= '[demo "1.0.0"] (f managed-coords-m '[demo])))
+    (is (= '[demo "1.0.0"] (f managed-coords-m '[demo nil])))
+    (is (= '[demo-test "2.0.0" :scope "test"] (f managed-coords-m '[demo-test])))
+    (is (= '[demo-test "2.0.0" :scope "provided"] (f managed-coords-m '[demo-test :scope "provided"])))
+    (is (= '[demo-test "2.0.0"] (f managed-coords-m '[demo-test :scope "compile"])))
+    (is (= '[demo-test "2.0.0"] (f managed-coords-m '[demo-test :scope nil])))
+    (is (= '[demo-compile "3.0.0"] (f managed-coords-m '[demo-compile])))
+    (is (= '[demo-excl "4.0.0" :exclusions [[demo] [demo-test]]] (f managed-coords-m '[demo-excl])))
+    (is (= '[demo-excl "4.0.0"] (f managed-coords-m '[demo-excl :exclusions nil])))))
+
 (comment
   "tests needed for:
   repository authentication
