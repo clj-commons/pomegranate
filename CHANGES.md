@@ -1,4 +1,4 @@
-## [Pomegranate](http://github.com/cemerick/pomegranate) changelog
+## [Pomegranate](https://github.com/cemerick/pomegranate) changelog
 
 ### [`0.3.1`](https://github.com/cemerick/pomegranate/issues?q=milestone%3A0.3.1+is%3Aclosed)
 
