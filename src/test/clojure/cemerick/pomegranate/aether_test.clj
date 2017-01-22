@@ -556,7 +556,7 @@
     'foo/bar 'foo/bar))
 
 (deftest check-conform-coord
-  (let [f @#'aether/conform-coord]
+  (let [f aether/conform-coord]
     (are [expect input] (= expect (f input))
                         nil nil
                         {:project 'foo} '[foo]
@@ -571,7 +571,7 @@
                         {:project 'foo, :version "1.2.3" :exclusions '[[bar]]} '[foo "1.2.3" :exclusions [[bar]]])))
 
 (deftest check-unform-coord
-  (let [f @#'aether/unform-coord]
+  (let [f aether/unform-coord]
     (are [expect input] (= expect (f input))
                         '[foo] {:project 'foo}
                         '[foo/bar] {:project 'foo/bar}
@@ -611,6 +611,27 @@
     (is (= '[demo-compile "3.0.0"] (f managed-coords-m '[demo-compile])))
     (is (= '[demo-excl "4.0.0" :exclusions [[demo] [demo-test]]] (f managed-coords-m '[demo-excl])))
     (is (= '[demo-excl "4.0.0"] (f managed-coords-m '[demo-excl :exclusions nil])))))
+
+;; simple functionality test; edge cases checked in underlying functions
+(deftest check-merge-versions-from-managed-coords
+  (let [canonical-form #(-> % aether/conform-coord aether/unform-coord)
+
+        managed-coords '[[demo "1.0.0"]
+                         [demo-test "2.0.0" :scope "test"]
+                         [demo-provided "3.0.0" :scope "provided"]
+                         [demo-compile "3.0.1" :scope "compile"]
+                         [demo-excl "4.0.0" :exclusions [[demo] [demo-test]]]]
+        local-coords '[[foo "1.0.0" :scope "test"]
+                       [foo/bar "2.0.0" :exclusions [[demo]] :scope "compile"]]
+
+        coords (concat local-coords '[[demo]
+                                      [demo-test "2.0.0"]
+                                      [demo-provided]
+                                      [demo-compile]
+                                      [demo-excl]])
+        merged-coords (aether/merge-versions-from-managed-coords coords managed-coords)
+        expected-coords (map canonical-form (concat managed-coords local-coords))]
+    (is (= (set merged-coords) (set expected-coords)))))
 
 (comment
   "tests needed for:

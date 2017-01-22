@@ -636,7 +636,7 @@ kwarg to the repository kwarg.
 (defn- canonical-id [id]
   (apply symbol (distinct ((juxt group name) id))))
 
-(defn- conform-coord
+(defn conform-coord
   "Returns a map describing the coordinate.  The full project ID is
    under the :project key and the version, if specified and not nil,
    under the :version key.  All other specified options appear with
@@ -657,7 +657,7 @@ kwarg to the repository kwarg.
                (= [:extension "jar"] %)
                (= [:optional false] %)) dep-map))
 
-(defn- unform-coord
+(defn unform-coord
   "Returns the canonical, vector form of a dependency that was
    specified as a map."
   [{:keys [project version] :as dep-map}]
@@ -681,7 +681,7 @@ kwarg to the repository kwarg.
       (unform-coord (into {} (remove (comp nil? second) merged-map)))
       (throw (IllegalArgumentException. (str "Provided artifact is missing a version: " coord))))))
 
-(defn- merge-versions-from-managed-coords
+(defn merge-versions-from-managed-coords
   "Given a vector of coordinates (e.g. [[group/name <\"version\"> & settings] ..])
   where the version field is optional or can be nil, and a vector of managed coordinates,
   returns an updated vector of coordinates with version numbers merged in from the
