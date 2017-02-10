@@ -287,7 +287,7 @@
       :passphrase - passphrase to log in wth
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
-      :checksum - :fail | :ignore | :warn (default)
+      :checksum - :fail (default) | :ignore | :warn
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies
 
