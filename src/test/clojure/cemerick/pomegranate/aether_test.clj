@@ -330,6 +330,8 @@
      :local-repo tmp-local-repo-dir))
   (is (= 3 (count (.list (io/file tmp-local-repo-dir "group" "artifact" "1.0.0"))))))
 
+(java.lang.System/setProperty "aether.checksums.forSignature" "true")
+
 (deftest deploy-artifacts
   (aether/deploy-artifacts
    :artifacts '[[demo "1.0.0"]
@@ -355,7 +357,7 @@
            "demo-1.0.0.jar.asc.md5"
            "demo-1.0.0.jar.asc.sha1"
            "demo-1.0.0.jar.asc"}
-         (set (.list (io/file tmp-remote-repo-dir "demo" "demo" "1.0.0")))))
+         (set (.list (io/file tmp-remote-repo-dir "demo" "demo" "1.0.0")))) "Should deploy correctly demo \"1.0.0\"")
   (is (= '{[demo "1.0.0"] nil}
          (aether/resolve-dependencies :repositories tmp-remote-repo
                                       :coordinates
@@ -379,10 +381,10 @@
 
 (deftest install-artifacts
   (aether/install-artifacts
-    :artifacts '[[demo "1.0.0"]
-                 [demo "1.0.0" :extension "jar.asc"]
-                 [demo "1.0.0" :extension "pom"]
-                 [demo "1.0.0" :extension "pom.asc"]]
+   :artifacts '[[demo "1.0.0"]
+                [demo "1.0.0" :extension "jar.asc"]
+                [demo "1.0.0" :extension "pom"]
+                [demo "1.0.0" :extension "pom.asc"]]
    ;; note: the .asc files in the test-repo are dummies, but it doesn't matter for this test
    :files {'[demo "1.0.0"] (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
            '[demo "1.0.0" :extension "jar.asc"] (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar.asc")
