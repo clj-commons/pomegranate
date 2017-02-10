@@ -7,9 +7,9 @@
   (:import (org.eclipse.aether RepositorySystem)
            (org.eclipse.aether.transfer TransferListener)
            (org.eclipse.aether.artifact Artifact)
-           (org.eclipse.aether.connector.file FileRepositoryConnectorFactory)
-           (org.eclipse.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
-           (org.eclipse.aether.spi.connector RepositoryConnectorFactory)
+           (org.eclipse.aether.transport.file FileTransporterFactory)
+           (org.eclipse.aether.spi.connector RepositoryConnectorFactory
+                                             transport.TransporterFactory)
            (org.eclipse.aether.repository Proxy  Authentication
                                           RepositoryPolicy LocalRepository RemoteRepository RemoteRepository$Builder
                                           MirrorSelector)
@@ -22,43 +22,16 @@
            (org.eclipse.aether.util.artifact SubArtifact)
            (org.eclipse.aether.deployment DeployRequest)
            (org.eclipse.aether.installation InstallRequest)
-           (org.eclipse.aether.util.version GenericVersionScheme)))
+           (org.eclipse.aether.util.version GenericVersionScheme)
+           (org.eclipse.aether.connector.basic BasicRepositoryConnectorFactory)
+           (org.eclipse.aether.transport.http HttpTransporterFactory)
+           (org.eclipse.aether.impl DefaultServiceLocator$ErrorHandler)
+           (org.apache.maven.repository.internal MavenRepositorySystemUtils)))
 
 (def ^{:private true} default-local-repo
   (io/file (System/getProperty "user.home") ".m2" "repository"))
 
 (def maven-central {"central" "http://repo1.maven.org/maven2/"})
-
-;; Using HttpWagon (which uses apache httpclient) because the "LightweightHttpWagon"
-;; (which just uses JDK HTTP) reliably flakes if you attempt to resolve SNAPSHOT
-;; artifacts from an HTTPS password-protected repository (like a nexus instance)
-;; when other un-authenticated repositories are included in the resolution.
-;; My theory is that the JDK HTTP impl is screwing up connection pooling or something,
-;; and reusing the same connection handle for the HTTPS repo as it used for e.g.
-;; central, without updating the authentication info.
-;; In any case, HttpWagon is what Maven 3 uses, and it works.
-(def ^{:private true} wagon-factories (atom {"http" #(org.apache.maven.wagon.providers.http.HttpWagon.)
-                                             "https" #(org.apache.maven.wagon.providers.http.HttpWagon.)}))
-
-(defn register-wagon-factory!
-  "Registers a new no-arg factory function for the given scheme.  The function must return
-   an implementation of org.apache.maven.wagon.Wagon."
-  [scheme factory-fn]
-  (swap! wagon-factories (fn [m]
-                           (when-let [fn (m scheme)]
-                             (println (format "Warning: replacing existing support for %s repositories (%s) with %s" scheme fn factory-fn)))
-                           (assoc m scheme factory-fn))))
-
-(deftype PomegranateWagonProvider []
-  WagonProvider
-  (release [_ wagon])
-  (lookup [_ role-hint]
-          (when-let [f (get @wagon-factories role-hint)]
-            (try
-              (f)
-              (catch Exception e
-                (clojure.stacktrace/print-cause-trace e)
-                (throw e))))))
 
 (deftype TransferListenerProxy [listener-fn]
   TransferListener
@@ -105,12 +78,16 @@
 
 (defn- repository-system
   []
-  (.getService
-   (doto (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newServiceLocator)
-     (.setService WagonProvider PomegranateWagonProvider)
-     (.addService RepositoryConnectorFactory FileRepositoryConnectorFactory)
-     (.addService RepositoryConnectorFactory WagonRepositoryConnectorFactory))
-   RepositorySystem))
+  (let [error-handler (clojure.core/proxy [DefaultServiceLocator$ErrorHandler] []
+                        (serviceCreationFailed [type-clazz impl-clazz ^Throwable e]
+                          (clojure.stacktrace/print-cause-trace e)))]
+    (.getService
+     (doto (MavenRepositorySystemUtils/newServiceLocator)
+       (.addService RepositoryConnectorFactory BasicRepositoryConnectorFactory)
+       (.addService TransporterFactory FileTransporterFactory)
+       (.addService TransporterFactory HttpTransporterFactory)
+       (.setErrorHandler error-handler))
+     RepositorySystem)))
 
 (defn- construct-transfer-listener
   [transfer-listener]

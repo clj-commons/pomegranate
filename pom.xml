@@ -31,9 +31,9 @@
     <properties>
         <clojure.version>1.3.0</clojure.version>
 
-        <aetherVersion>0.9.0.M2</aetherVersion>
-        <mavenVersion>3.1.0</mavenVersion>
-        <wagonVersion>2.2</wagonVersion>
+        <aetherVersion>1.1.0</aetherVersion>
+        <mavenVersion>3.3.9</mavenVersion>
+        <wagonVersion>2.12</wagonVersion>
     </properties>
 
     <dependencies>
@@ -59,22 +59,21 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.aether</groupId>
-            <artifactId>aether-connector-file</artifactId>
+            <artifactId>aether-transport-file</artifactId>
             <version>${aetherVersion}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.aether</groupId>
-            <artifactId>aether-connector-wagon</artifactId>
+            <artifactId>aether-transport-http</artifactId>
             <version>${aetherVersion}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-utils</artifactId>
-              </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.tesla.maven</groupId>
+            <groupId>org.eclipse.aether</groupId>
+            <artifactId>aether-connector-basic</artifactId>
+            <version>${aetherVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
             <artifactId>maven-aether-provider</artifactId>
             <version>${mavenVersion}</version>
         </dependency>
