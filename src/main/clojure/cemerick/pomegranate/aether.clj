@@ -5,11 +5,12 @@
             [clojure.string :as str]
             clojure.stacktrace)
   (:import (org.eclipse.aether RepositorySystem)
+           (org.eclipse.aether.transport.wagon WagonProvider)
            (org.eclipse.aether.transfer TransferListener)
            (org.eclipse.aether.artifact Artifact)
            (org.eclipse.aether.transport.file FileTransporterFactory)
-           (org.eclipse.aether.spi.connector RepositoryConnectorFactory
-                                             transport.TransporterFactory)
+           (org.eclipse.aether.spi.connector RepositoryConnectorFactory)
+           (org.eclipse.aether.spi.connector.transport TransporterFactory)
            (org.eclipse.aether.repository Proxy  Authentication
                                           RepositoryPolicy LocalRepository RemoteRepository RemoteRepository$Builder
                                           MirrorSelector)
@@ -32,6 +33,37 @@
   (io/file (System/getProperty "user.home") ".m2" "repository"))
 
 (def maven-central {"central" "http://repo1.maven.org/maven2/"})
+
+;; Using HttpWagon (which uses apache httpclient) because the "LightweightHttpWagon"
+;; (which just uses JDK HTTP) reliably flakes if you attempt to resolve SNAPSHOT
+;; artifacts from an HTTPS password-protected repository (like a nexus instance)
+;; when other un-authenticated repositories are included in the resolution.
+;; My theory is that the JDK HTTP impl is screwing up connection pooling or something,
+;; and reusing the same connection handle for the HTTPS repo as it used for e.g.
+;; central, without updating the authentication info.
+;; In any case, HttpWagon is what Maven 3 uses, and it works.
+(def ^{:private true} wagon-factories
+  (atom {}))
+
+(defn register-wagon-factory!
+  "Registers a new no-arg factory function for the given scheme.  The function
+   must return an implementation of org.apache.maven.wagon.Wagon."
+  [scheme factory-fn]
+  (swap! wagon-factories (fn [m]
+                           (when-let [fn (m scheme)]
+                             (println (format "Warning: replacing existing support for %s repositories (%s) with %s" scheme fn factory-fn)))
+                           (assoc m scheme factory-fn))))
+
+(deftype PomegranateWagonProvider []
+  WagonProvider
+  (release [_ wagon])
+  (lookup [_ role-hint]
+          (when-let [f (get @wagon-factories role-hint)]
+            (try
+              (f)
+              (catch Exception e
+                (clojure.stacktrace/print-cause-trace e)
+                (throw e))))))
 
 (deftype TransferListenerProxy [listener-fn]
   TransferListener
@@ -83,6 +115,7 @@
                           (clojure.stacktrace/print-cause-trace e)))]
     (.getService
      (doto (MavenRepositorySystemUtils/newServiceLocator)
+       (.setService WagonProvider PomegranateWagonProvider)
        (.addService RepositoryConnectorFactory BasicRepositoryConnectorFactory)
        (.addService TransporterFactory FileTransporterFactory)
        (.addService TransporterFactory HttpTransporterFactory)
