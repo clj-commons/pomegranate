@@ -97,7 +97,7 @@
 (deftest resolve-deps-with-mirror
   (let [deps (aether/resolve-dependencies :repositories {"clojars" "https://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {"clojars" {:url "https://uk.maven.org/maven2"}}
+                                          :mirrors {"clojars" {:url "https://maven-central.storage.googleapis.com"}}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
@@ -106,7 +106,7 @@
 (deftest resolve-deps-with-wildcard-mirror
   (let [deps (aether/resolve-dependencies :repositories {"clojars" "https://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {#".+" {:url "https://uk.maven.org/maven2"}}
+                                          :mirrors {#".+" {:url "https://maven-central.storage.googleapis.com"}}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
