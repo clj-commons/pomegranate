@@ -43,15 +43,15 @@
 ;; central, without updating the authentication info.
 ;; In any case, HttpWagon is what Maven 3 uses, and it works.
 (def ^{:private true} wagon-factories
-  ;; needs org.apache.http.conn.HttpClientConnectionManager
-  (atom {"https" #(org.apache.maven.wagon.providers.http.HttpWagon.)}))
+  (atom {"https" #(org.apache.maven.wagon.providers.http.HttpWagon.)
+         "http" #(throw (Exception. "Tried to use insecure HTTP repository."))}))
 
 (defn register-wagon-factory!
   "Registers a new no-arg factory function for the given scheme.  The function
    must return an implementation of org.apache.maven.wagon.Wagon."
   [scheme factory-fn]
   (swap! wagon-factories (fn [m]
-                           (when-let [fn (m scheme)]
+                           (when-let [fn (and (not= scheme "http") (m scheme))]
                              (println (format "Warning: replacing existing support for %s repositories (%s) with %s" scheme fn factory-fn)))
                            (assoc m scheme factory-fn))))
 
