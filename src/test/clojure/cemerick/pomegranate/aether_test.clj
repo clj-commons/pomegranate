@@ -14,7 +14,7 @@
 (def tmp-local-repo-dir (io/file tmp-dir "local-repo"))
 (def tmp-local-repo2-dir (io/file tmp-dir "local-repo2"))
 
-(def test-remote-repo {"central" "http://repo1.maven.org/maven2/"})
+(def test-remote-repo {"central" "https://repo1.maven.org/maven2/"})
 
 (def test-repo {"test-repo" "file://test-repo"})
 (def tmp-remote-repo {"tmp-remote-repo" (str "file://" tmp-remote-repo-dir)})
@@ -95,18 +95,18 @@
            (.getAbsolutePath (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-mirror
-  (let [deps (aether/resolve-dependencies :repositories {"clojars" "http://clojars.org/repo"}
+  (let [deps (aether/resolve-dependencies :repositories {"clojars" "https://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {"clojars" {:url "http://uk.maven.org/maven2"}}
+                                          :mirrors {"clojars" {:url "https://uk.maven.org/maven2"}}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
            (.getAbsolutePath (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-wildcard-mirror
-  (let [deps (aether/resolve-dependencies :repositories {"clojars" "http://clojars.org/repo"}
+  (let [deps (aether/resolve-dependencies :repositories {"clojars" "https://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {#".+" {:url "http://uk.maven.org/maven2"}}
+                                          :mirrors {#".+" {:url "https://uk.maven.org/maven2"}}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
@@ -115,7 +115,7 @@
 (deftest resolve-deps-with-wildcard-override-mirror
   (let [deps (aether/resolve-dependencies :repositories test-remote-repo
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {#".+" {:url "http://clojars.org/repo"}
+                                          :mirrors {#".+" {:url "https://clojars.org/repo"}
                                                     (ffirst test-remote-repo) nil}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))

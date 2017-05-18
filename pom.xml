@@ -83,6 +83,13 @@
             <version>${wagonVersion}</version>
             <optional>true</optional>
         </dependency>
+        <!-- otherwise we get an earlier version that is missing the needed
+             org.apache.http.conn.HttpClientConnectionManager class -->
+        <dependency>
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+          <version>4.5.3</version>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>

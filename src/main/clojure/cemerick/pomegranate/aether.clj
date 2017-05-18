@@ -5,10 +5,11 @@
             [clojure.string :as str]
             clojure.stacktrace)
   (:import (org.eclipse.aether RepositorySystem)
-           (org.eclipse.aether.transport.wagon WagonProvider)
+           (org.eclipse.aether.transport.wagon WagonTransporterFactory
+                                               WagonProvider)
+           (org.eclipse.aether.transport.file FileTransporterFactory)
            (org.eclipse.aether.transfer TransferListener)
            (org.eclipse.aether.artifact Artifact)
-           (org.eclipse.aether.transport.file FileTransporterFactory)
            (org.eclipse.aether.spi.connector RepositoryConnectorFactory)
            (org.eclipse.aether.spi.connector.transport TransporterFactory)
            (org.eclipse.aether.repository Proxy  Authentication
@@ -25,14 +26,13 @@
            (org.eclipse.aether.installation InstallRequest)
            (org.eclipse.aether.util.version GenericVersionScheme)
            (org.eclipse.aether.connector.basic BasicRepositoryConnectorFactory)
-           (org.eclipse.aether.transport.http HttpTransporterFactory)
            (org.eclipse.aether.impl DefaultServiceLocator$ErrorHandler)
            (org.apache.maven.repository.internal MavenRepositorySystemUtils)))
 
 (def ^{:private true} default-local-repo
   (io/file (System/getProperty "user.home") ".m2" "repository"))
 
-(def maven-central {"central" "http://repo1.maven.org/maven2/"})
+(def maven-central {"central" "https://repo1.maven.org/maven2/"})
 
 ;; Using HttpWagon (which uses apache httpclient) because the "LightweightHttpWagon"
 ;; (which just uses JDK HTTP) reliably flakes if you attempt to resolve SNAPSHOT
@@ -43,7 +43,8 @@
 ;; central, without updating the authentication info.
 ;; In any case, HttpWagon is what Maven 3 uses, and it works.
 (def ^{:private true} wagon-factories
-  (atom {}))
+  ;; needs org.apache.http.conn.HttpClientConnectionManager
+  (atom {"https" #(org.apache.maven.wagon.providers.http.HttpWagon.)}))
 
 (defn register-wagon-factory!
   "Registers a new no-arg factory function for the given scheme.  The function
@@ -110,15 +111,17 @@
 
 (defn- repository-system
   []
-  (let [error-handler (clojure.core/proxy [DefaultServiceLocator$ErrorHandler] []
+  (let [transporter-factory (doto (WagonTransporterFactory.)
+                              (.setWagonProvider (PomegranateWagonProvider.)))
+        error-handler (clojure.core/proxy [DefaultServiceLocator$ErrorHandler] []
                         (serviceCreationFailed [type-clazz impl-clazz ^Throwable e]
                           (clojure.stacktrace/print-cause-trace e)))]
     (.getService
      (doto (MavenRepositorySystemUtils/newServiceLocator)
+       (.setService TransporterFactory WagonTransporterFactory)
        (.setService WagonProvider PomegranateWagonProvider)
        (.addService RepositoryConnectorFactory BasicRepositoryConnectorFactory)
        (.addService TransporterFactory FileTransporterFactory)
-       (.addService TransporterFactory HttpTransporterFactory)
        (.setErrorHandler error-handler))
      RepositorySystem)))
 
