@@ -542,7 +542,7 @@ kwarg to the repository kwarg.
         :extension  (default \"*\")
 
     :repositories - {name url ..} | {name settings ..}
-      (defaults to {\"central\" \"http://repo1.maven.org/maven2/\"}
+      (defaults to {\"central\" \"https://repo1.maven.org/maven2/\"}
       settings:
       :url - URL of the repository
       :snapshots - use snapshots versions? (default true)
@@ -728,7 +728,7 @@ kwarg to the repository kwarg.
       don't explicitly specify them.
 
     :repositories - {name url ..} | {name settings ..}
-      (defaults to {\"central\" \"http://repo1.maven.org/maven2/\"}
+      (defaults to {\"central\" \"https://repo1.maven.org/maven2/\"}
       settings:
       :url - URL of the repository
       :snapshots - use snapshots versions? (default true)
