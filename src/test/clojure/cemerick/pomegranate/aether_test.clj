@@ -85,15 +85,6 @@
     (is (instance? org.eclipse.aether.collection.CollectResult
           (apply aether/resolve-dependencies* :retrieve false args)))))
 
-(deftest resolve-deps-with-proxy
-  (let [deps (aether/resolve-dependencies :repositories test-remote-repo
-                                          :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :proxy {:host "repo1.maven.org"  :port 80  :non-proxy-hosts "clojars.org"} 
-                                          :local-repo tmp-local-repo-dir)]
-    (is (= 1 (count deps)))
-    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
-
 (deftest resolve-deps-with-mirror
   (let [deps (aether/resolve-dependencies :repositories {"clojars" "https://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
