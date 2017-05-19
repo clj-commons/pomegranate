@@ -462,7 +462,7 @@ kwarg to the repository kwarg.
     (reduce (fn [g ^DependencyNode n]
               (if-let [dep (.getDependency n)]
                 (update-in g [(dep-spec dep)]
-                           clojure.set/union
+                           (fnil clojure.set/union #{})
                            (->> (.getChildren n)
                              (map #(.getDependency %))
                              (map dep-spec)
