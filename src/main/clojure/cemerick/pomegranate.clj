@@ -61,7 +61,7 @@
 
    (add-dependencies :coordinates '[[incanter \"1.2.3\"]]
                      :repositories (merge cemerick.pomegranate.aether/maven-central
-                                     {\"clojars\" \"http://clojars.org/repo\"}))
+                                     {\"clojars\" \"https://clojars.org/repo\"}))
 
    Note that Maven central is used as the sole repository if none are specified.
    If :repositories are provided, then you must merge in the `maven-central` map from

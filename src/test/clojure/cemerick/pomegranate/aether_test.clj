@@ -14,7 +14,7 @@
 (def tmp-local-repo-dir (io/file tmp-dir "local-repo"))
 (def tmp-local-repo2-dir (io/file tmp-dir "local-repo2"))
 
-(def test-remote-repo {"central" "http://repo1.maven.org/maven2/"})
+(def test-remote-repo {"central" "https://repo1.maven.org/maven2/"})
 
 (def test-repo {"test-repo" "file://test-repo"})
 (def tmp-remote-repo {"tmp-remote-repo" (str "file://" tmp-remote-repo-dir)})
@@ -80,33 +80,24 @@
 
 (deftest impl-detail-types
   (let [args [:coordinates '[[commons-logging "1.1"]] :local-repo tmp-local-repo-dir]]
-    (is (instance? org.sonatype.aether.resolution.DependencyResult
+    (is (instance? org.eclipse.aether.resolution.DependencyResult
           (apply aether/resolve-dependencies* args)))
-    (is (instance? org.sonatype.aether.collection.CollectResult
+    (is (instance? org.eclipse.aether.collection.CollectResult
           (apply aether/resolve-dependencies* :retrieve false args)))))
 
-(deftest resolve-deps-with-proxy
-  (let [deps (aether/resolve-dependencies :repositories test-remote-repo
-                                          :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :proxy {:host "repo1.maven.org"  :port 80  :non-proxy-hosts "clojars.org"} 
-                                          :local-repo tmp-local-repo-dir)]
-    (is (= 1 (count deps)))
-    (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
-
 (deftest resolve-deps-with-mirror
-  (let [deps (aether/resolve-dependencies :repositories {"clojars" "http://clojars.org/repo"}
+  (let [deps (aether/resolve-dependencies :repositories {"clojars" "https://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {"clojars" {:url "http://uk.maven.org/maven2"}}
+                                          :mirrors {"clojars" {:url "https://maven-central.storage.googleapis.com"}}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
            (.getAbsolutePath (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-wildcard-mirror
-  (let [deps (aether/resolve-dependencies :repositories {"clojars" "http://clojars.org/repo"}
+  (let [deps (aether/resolve-dependencies :repositories {"clojars" "https://clojars.org/repo"}
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {#".+" {:url "http://uk.maven.org/maven2"}}
+                                          :mirrors {#".+" {:url "https://maven-central.storage.googleapis.com"}}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
@@ -115,7 +106,7 @@
 (deftest resolve-deps-with-wildcard-override-mirror
   (let [deps (aether/resolve-dependencies :repositories test-remote-repo
                                           :coordinates '[[javax.servlet/servlet-api "2.5"]]
-                                          :mirrors {#".+" {:url "http://clojars.org/repo"}
+                                          :mirrors {#".+" {:url "https://clojars.org/repo"}
                                                     (ffirst test-remote-repo) nil}
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
@@ -330,6 +321,8 @@
      :local-repo tmp-local-repo-dir))
   (is (= 3 (count (.list (io/file tmp-local-repo-dir "group" "artifact" "1.0.0"))))))
 
+(java.lang.System/setProperty "aether.checksums.forSignature" "true")
+
 (deftest deploy-artifacts
   (aether/deploy-artifacts
    :artifacts '[[demo "1.0.0"]
@@ -355,7 +348,7 @@
            "demo-1.0.0.jar.asc.md5"
            "demo-1.0.0.jar.asc.sha1"
            "demo-1.0.0.jar.asc"}
-         (set (.list (io/file tmp-remote-repo-dir "demo" "demo" "1.0.0")))))
+         (set (.list (io/file tmp-remote-repo-dir "demo" "demo" "1.0.0")))) "Should deploy correctly demo \"1.0.0\"")
   (is (= '{[demo "1.0.0"] nil}
          (aether/resolve-dependencies :repositories tmp-remote-repo
                                       :coordinates
@@ -379,10 +372,10 @@
 
 (deftest install-artifacts
   (aether/install-artifacts
-    :artifacts '[[demo "1.0.0"]
-                 [demo "1.0.0" :extension "jar.asc"]
-                 [demo "1.0.0" :extension "pom"]
-                 [demo "1.0.0" :extension "pom.asc"]]
+   :artifacts '[[demo "1.0.0"]
+                [demo "1.0.0" :extension "jar.asc"]
+                [demo "1.0.0" :extension "pom"]
+                [demo "1.0.0" :extension "pom.asc"]]
    ;; note: the .asc files in the test-repo are dummies, but it doesn't matter for this test
    :files {'[demo "1.0.0"] (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")
            '[demo "1.0.0" :extension "jar.asc"] (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar.asc")
@@ -393,7 +386,7 @@
            "demo-1.0.0.pom"
            "demo-1.0.0.jar.asc"
            "demo-1.0.0.pom.asc"
-           "_maven.repositories"}
+           "_remote.repositories"}
          (set (.list (io/file tmp-local-repo-dir "demo" "demo" "1.0.0"))))))
 
 (deftest deploy-exceptions
@@ -547,6 +540,89 @@
     (is (= {['demo/demo2 "1.0.0"] {['demo "1.0.0"] nil}
             ['tester "0.1.0-20120403.012847-1"] nil}
            (aether/dependency-hierarchy coords deps)))))
+
+;; taken from the test suite for the pendantic lib by Nelson Morris
+
+(defn get-versions [name repo]
+  (let [name (symbol name)]
+    (map second (filter #(= name (first %)) (keys repo)))))
+
+(defn make-pom-string [name version deps]
+  (str "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+  <project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>" name "</groupId>
+  <artifactId>" name "</artifactId>
+  <packaging>jar</packaging>
+  <version>" version "</version>
+  <name>" name "</name>"
+  (if-not (empty? deps)
+    (apply str
+           "<dependencies>"
+           (clojure.string/join "\n"
+                                (for [[n v] deps]
+                                  (str "<dependency>
+                   <groupId>" n "</groupId>
+                   <artifactId>"n"</artifactId>
+                   <version>"v"</version>
+                   </dependency>")))
+           "</dependencies>"))
+  " </project>"))
+
+(defn make-metadata [name versions]
+  (str "<metadata>
+  <groupId>" name "</groupId>
+  <artifactId>" name "</artifactId>
+  <versioning>
+  <versions>"
+  (clojure.string/join "\n"
+                       (for [v versions]
+                         (str "<version>"v"</version>")))
+    "</versions>
+    <lastUpdated>20120810193549</lastUpdated>
+  </versioning>
+  </metadata>"))
+
+(def fake-repo
+  '{[a "1"] []
+    [a "2"] []
+    [aa "2"] [[a "2"]]})
+
+(deftest register-fake-wagon
+  (aether/register-wagon-factory!
+     "fake"
+     #(reify org.apache.maven.wagon.Wagon
+        (getRepository [_]
+          (proxy [org.apache.maven.wagon.repository.Repository] []))
+        (^void connect [_
+                        ^org.apache.maven.wagon.repository.Repository _
+                        ^org.apache.maven.wagon.authentication.AuthenticationInfo _
+                        ^org.apache.maven.wagon.proxy.ProxyInfoProvider _])
+        (disconnect [_])
+        (removeTransferListener [_ _])
+        (addTransferListener [_ _])
+        (setTimeout [_ _])
+        (setInteractive [_ _])
+        (get [_ name file]
+          (let [[n _ version] (clojure.string/split name #"/")]
+            (if (= name (str n "/" n "/maven-metadata.xml"))
+              (if-let [versions (get-versions n fake-repo)]
+                (spit file (make-metadata n versions))
+                (spit file ""))
+              (if-let [deps (fake-repo [(symbol n) version])]
+                (if (re-find #".pom$" name)
+                  (spit file (make-pom-string n version deps))
+                  (spit file ""))
+                (throw (org.apache.maven.wagon.ResourceDoesNotExistException. ""))))))))
+
+  (let [tmp-local-repo-dir (io/file tmp-dir "local-repo")]
+    (aether/resolve-dependencies :coordinates '[[a "1"]]
+                                 :repositories {"test-repo"
+                                                {:url "fake://ss"
+                                                 :checksum :ignore}}
+                                 :local-repo tmp-local-repo-dir)
+    (is (= #{"local-repo" "a" "1" "a-1.pom" "_remote.repositories" "a-1.jar"}
+           (set (map (memfn getName) (file-seq tmp-local-repo-dir)))))))
 
 (comment
   "tests needed for:

@@ -4,46 +4,54 @@
             clojure.set
             [clojure.string :as str]
             clojure.stacktrace)
-  (:import (org.apache.maven.repository.internal DefaultServiceLocator MavenRepositorySystemSession)
-           (org.sonatype.aether.transfer TransferListener)
-           (org.sonatype.aether.connector.file FileRepositoryConnectorFactory)
-           (org.sonatype.aether.connector.wagon WagonProvider WagonRepositoryConnectorFactory)
-           (org.sonatype.aether.spi.connector RepositoryConnectorFactory)
-           (org.sonatype.aether.repository Proxy  Authentication
-                                           RepositoryPolicy LocalRepository RemoteRepository
-                                           MirrorSelector)
-           (org.sonatype.aether.util.repository DefaultProxySelector)
-           (org.sonatype.aether.graph Dependency Exclusion DependencyNode)
-           (org.sonatype.aether.collection CollectRequest)
-           (org.sonatype.aether.resolution DependencyRequest ArtifactRequest
-                                           ArtifactResult VersionRequest)
-           (org.sonatype.aether.util.artifact DefaultArtifact ArtifactProperties)
-           (org.sonatype.aether.deployment DeployRequest)
-           (org.sonatype.aether.installation InstallRequest)
-           (org.sonatype.aether.util.version GenericVersionScheme)))
+  (:import (org.eclipse.aether RepositorySystem)
+           (org.eclipse.aether.transport.wagon WagonTransporterFactory
+                                               WagonProvider)
+           (org.eclipse.aether.transport.file FileTransporterFactory)
+           (org.eclipse.aether.transfer TransferListener)
+           (org.eclipse.aether.artifact Artifact)
+           (org.eclipse.aether.spi.connector RepositoryConnectorFactory)
+           (org.eclipse.aether.spi.connector.transport TransporterFactory)
+           (org.eclipse.aether.repository Proxy  Authentication
+                                          RepositoryPolicy LocalRepository RemoteRepository RemoteRepository$Builder
+                                          MirrorSelector)
+           (org.eclipse.aether.util.repository DefaultProxySelector AuthenticationBuilder)
+           (org.eclipse.aether.graph Dependency Exclusion DependencyNode)
+           (org.eclipse.aether.collection CollectRequest)
+           (org.eclipse.aether.resolution DependencyRequest ArtifactRequest
+                                          ArtifactResult VersionRequest)
+           (org.eclipse.aether.artifact DefaultArtifact ArtifactProperties)
+           (org.eclipse.aether.util.artifact SubArtifact)
+           (org.eclipse.aether.deployment DeployRequest)
+           (org.eclipse.aether.installation InstallRequest)
+           (org.eclipse.aether.util.version GenericVersionScheme)
+           (org.eclipse.aether.connector.basic BasicRepositoryConnectorFactory)
+           (org.eclipse.aether.impl DefaultServiceLocator$ErrorHandler)
+           (org.apache.maven.repository.internal MavenRepositorySystemUtils)))
 
 (def ^{:private true} default-local-repo
   (io/file (System/getProperty "user.home") ".m2" "repository"))
 
-(def maven-central {"central" "http://repo1.maven.org/maven2/"})
+(def maven-central {"central" "https://repo1.maven.org/maven2/"})
 
-; Using HttpWagon (which uses apache httpclient) because the "LightweightHttpWagon"
-; (which just uses JDK HTTP) reliably flakes if you attempt to resolve SNAPSHOT
-; artifacts from an HTTPS password-protected repository (like a nexus instance)
-; when other un-authenticated repositories are included in the resolution.
-; My theory is that the JDK HTTP impl is screwing up connection pooling or something,
-; and reusing the same connection handle for the HTTPS repo as it used for e.g.
-; central, without updating the authentication info.
-; In any case, HttpWagon is what Maven 3 uses, and it works.
-(def ^{:private true} wagon-factories (atom {"http" #(org.apache.maven.wagon.providers.http.HttpWagon.)
-                                             "https" #(org.apache.maven.wagon.providers.http.HttpWagon.)}))
+;; Using HttpWagon (which uses apache httpclient) because the "LightweightHttpWagon"
+;; (which just uses JDK HTTP) reliably flakes if you attempt to resolve SNAPSHOT
+;; artifacts from an HTTPS password-protected repository (like a nexus instance)
+;; when other un-authenticated repositories are included in the resolution.
+;; My theory is that the JDK HTTP impl is screwing up connection pooling or something,
+;; and reusing the same connection handle for the HTTPS repo as it used for e.g.
+;; central, without updating the authentication info.
+;; In any case, HttpWagon is what Maven 3 uses, and it works.
+(def ^{:private true} wagon-factories
+  (atom {"https" #(org.apache.maven.wagon.providers.http.HttpWagon.)
+         "http" #(throw (Exception. "Tried to use insecure HTTP repository."))}))
 
 (defn register-wagon-factory!
-  "Registers a new no-arg factory function for the given scheme.  The function must return
-   an implementation of org.apache.maven.wagon.Wagon."
+  "Registers a new no-arg factory function for the given scheme.  The function
+   must return an implementation of org.apache.maven.wagon.Wagon."
   [scheme factory-fn]
   (swap! wagon-factories (fn [m]
-                           (when-let [fn (m scheme)]
+                           (when-let [fn (and (not= scheme "http") (m scheme))]
                              (println (format "Warning: replacing existing support for %s repositories (%s) with %s" scheme fn factory-fn)))
                            (assoc m scheme factory-fn))))
 
@@ -51,12 +59,12 @@
   WagonProvider
   (release [_ wagon])
   (lookup [_ role-hint]
-    (when-let [f (get @wagon-factories role-hint)]
-      (try 
-        (f)
-        (catch Exception e
-          (clojure.stacktrace/print-cause-trace e)
-          (throw e))))))
+          (when-let [f (get @wagon-factories role-hint)]
+            (try
+              (f)
+              (catch Exception e
+                (clojure.stacktrace/print-cause-trace e)
+                (throw e))))))
 
 (deftype TransferListenerProxy [listener-fn]
   TransferListener
@@ -68,10 +76,10 @@
   (transferSucceeded [_ e] (listener-fn e)))
 
 (defn- transfer-event
-  [^org.sonatype.aether.transfer.TransferEvent e]
-  ; INITIATED, STARTED, PROGRESSED, CORRUPTED, SUCCEEDED, FAILED
+  [^org.eclipse.aether.transfer.TransferEvent e]
+  ;; INITIATED, STARTED, PROGRESSED, CORRUPTED, SUCCEEDED, FAILED
   {:type (-> e .getType .name str/lower-case keyword)
-   ; :get :put
+   ;; :get :put
    :method (-> e .getRequestType str/lower-case keyword)
    :transferred (.getTransferredBytes e)
    :error (.getException e)
@@ -103,11 +111,19 @@
 
 (defn- repository-system
   []
-  (.getService (doto (DefaultServiceLocator.)
-                 (.addService RepositoryConnectorFactory FileRepositoryConnectorFactory)
-                 (.addService RepositoryConnectorFactory WagonRepositoryConnectorFactory)
-                 (.addService WagonProvider PomegranateWagonProvider))
-               org.sonatype.aether.RepositorySystem))
+  (let [transporter-factory (doto (WagonTransporterFactory.)
+                              (.setWagonProvider (PomegranateWagonProvider.)))
+        error-handler (clojure.core/proxy [DefaultServiceLocator$ErrorHandler] []
+                        (serviceCreationFailed [type-clazz impl-clazz ^Throwable e]
+                          (clojure.stacktrace/print-cause-trace e)))]
+    (.getService
+     (doto (MavenRepositorySystemUtils/newServiceLocator)
+       (.setService TransporterFactory WagonTransporterFactory)
+       (.setService WagonProvider PomegranateWagonProvider)
+       (.addService RepositoryConnectorFactory BasicRepositoryConnectorFactory)
+       (.addService TransporterFactory FileTransporterFactory)
+       (.setErrorHandler error-handler))
+     RepositorySystem)))
 
 (defn- construct-transfer-listener
   [transfer-listener]
@@ -124,14 +140,16 @@
 
 (defn repository-session
   [{:keys [repository-system local-repo offline? transfer-listener mirror-selector]}]
-  (-> (MavenRepositorySystemSession.)
-    (.setLocalRepositoryManager (.newLocalRepositoryManager repository-system
-                                  (-> (io/file (or local-repo default-local-repo))
-                                    .getAbsolutePath
-                                    LocalRepository.)))
-    (.setMirrorSelector mirror-selector)
-    (.setOffline (boolean offline?))
-    (.setTransferListener (construct-transfer-listener transfer-listener))))
+  (let [session (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newSession)]
+    (doto session
+      (.setLocalRepositoryManager (.newLocalRepositoryManager
+                                   repository-system
+                                   session
+                                   (LocalRepository.
+                                    (io/file (or local-repo default-local-repo)))))
+      (.setMirrorSelector mirror-selector)
+      (.setOffline (boolean offline?))
+      (.setTransferListener (construct-transfer-listener transfer-listener)))))
 
 (def update-policies {:daily RepositoryPolicy/UPDATE_POLICY_DAILY
                       :always RepositoryPolicy/UPDATE_POLICY_ALWAYS
@@ -144,46 +162,54 @@
 (defn- policy
   [policy-settings enabled?]
   (RepositoryPolicy.
-    (boolean enabled?)
-    (update-policies (:update policy-settings :daily))
-    (checksum-policies (:checksum policy-settings :fail))))
+   (boolean enabled?)
+   (update-policies (:update policy-settings :daily))
+   (checksum-policies (:checksum policy-settings :fail))))
 
 (defn- set-policies
   [repo settings]
   (doto repo
-    (.setPolicy true (policy settings (:snapshots settings true)))
-    (.setPolicy false (policy settings (:releases settings true)))))
+    (.setSnapshotPolicy (policy settings (:snapshots settings true)))
+    (.setReleasePolicy (policy settings (:releases settings true)))))
 
 (defn- set-authentication
   "Calls the setAuthentication method on obj"
   [obj {:keys [username password passphrase private-key-file] :as settings}]
   (if (or username password private-key-file passphrase)
-    (.setAuthentication obj (Authentication. username password private-key-file passphrase))
+    (doto obj
+      (.setAuthentication
+       (.build
+        (doto (AuthenticationBuilder.)
+          (.addUsername username)
+          (.addPassword password)
+          (.addPrivateKey private-key-file passphrase)))))
     obj))
 
-(defn- set-proxy 
-  [repo {:keys [type host port non-proxy-hosts ] 
-         :or {type "http"} 
-         :as proxy} ]
-  (if (and repo host port)
+(defn- set-proxy
+  [repo-builder {:keys [type host port non-proxy-hosts ]
+                 :or {type "http"}
+                 :as proxy} ]
+  (if (and repo-builder host port)
     (let [prx-sel (doto (DefaultProxySelector.)
                     (.add (set-authentication (Proxy. type host port nil) proxy)
                           non-proxy-hosts))
-          prx (.getProxy prx-sel repo)]
-      (.setProxy repo prx))
-    repo))
+          prx (.getProxy prx-sel (.build repo-builder))] ; ugg.
+      ;; Don't know how to get around "building" the repo for this
+      (.setProxy repo-builder prx))
+    repo-builder))
 
 (defn- make-repository
   [[id settings] proxy]
   (let [settings-map (if (string? settings)
                        {:url settings}
-                       settings)] 
-    (doto (RemoteRepository. id
-                             (:type settings-map "default")
-                             (str (:url settings-map)))
-      (set-policies settings-map)
-      (set-proxy proxy)
-      (set-authentication settings-map))))
+                       settings)]
+    (.build
+     (doto (RemoteRepository$Builder. id
+                                      (:type settings-map "default")
+                                      (str (:url settings-map)))
+       (set-policies settings-map)
+       (set-authentication settings-map)
+       (set-proxy proxy)))))
 
 (defn- group
   [group-artifact]
@@ -196,17 +222,17 @@
    given a lein-style dependency spec.  :extension defaults to jar."
   [[group-artifact version & {:keys [classifier extension] :or {extension "jar"}}]]
   (->> [(group group-artifact) (name group-artifact) extension classifier version]
-    (remove nil?)
-    (interpose \:)
-    (apply str)))
+       (remove nil?)
+       (interpose \:)
+       (apply str)))
 
 (defn- exclusion
   [[group-artifact & {:as opts}]]
   (Exclusion.
-    (group group-artifact)
-    (name group-artifact)
-    (:classifier opts "*")
-    (:extension opts "*")))
+   (group group-artifact)
+   (name group-artifact)
+   (:classifier opts "*")
+   (:extension opts "*")))
 
 (defn- normalize-exclusion-spec [spec]
   (if (symbol? spec)
@@ -242,8 +268,8 @@
   [^Dependency dep]
   (let [artifact (.getArtifact dep)]
     (-> (merge (bean dep) (bean artifact))
-      dep-spec*
-      (with-meta {:dependency dep :file (.getFile artifact)}))))
+        dep-spec*
+        (with-meta {:dependency dep :file (.getFile artifact)}))))
 
 (defn- dep-spec*
   "Base function for producing lein-style dependency spec vectors for dependencies
@@ -297,7 +323,7 @@
       :passphrase - passphrase to log in wth
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
-      :checksum - :fail | :ignore | :warn (default)
+      :checksum - :fail (default) | :ignore | :warn
   :local-repo - path to the local repository (defaults to ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies
 
@@ -479,13 +505,16 @@ kwarg to the repository kwarg.
                        :url (.getUrl repo)
                        :snapshots (-> repo (.getPolicy true) .isEnabled)
                        :releases (-> repo (.getPolicy false) .isEnabled)}
-            
+
             {:keys [name repo-manager content-type] :as mirror-spec}
             (mirror-selector-fn repo-spec)]
         (when-let [mirror (and mirror-spec (make-repository [name mirror-spec] proxy))]
-        (-> (.setMirroredRepositories mirror [repo])
-          (.setRepositoryManager (boolean repo-manager))
-          (.setContentType (or content-type "default"))))))))
+          (-> (RemoteRepository$Builder. mirror)
+              (.setMirroredRepositories [repo])
+              (.setRepositoryManager (boolean repo-manager))
+              (.setContentType (or content-type "default"))
+              (.build)))))))
+
 
 (defn resolve-artifacts*
   "Resolves artifacts for the coordinates kwarg, using repositories from the
@@ -494,8 +523,8 @@ kwarg to the repository kwarg.
    Retrieval of dependencies can be disabled by providing `:retrieve false` as a
    kwarg.
 
-   Returns an sequence of either `org.sonatype.aether.VersionResult`
-   if `:retrieve false`, or `org.sonatype.aether.ArtifactResult` if
+   Returns an sequence of either `org.eclipse.aether.VersionResult`
+   if `:retrieve false`, or `org.eclipse.aether.ArtifactResult` if
    `:retrieve true` (the default).
 
    If you don't want to mess with the Aether implementation classes, then use
@@ -513,7 +542,7 @@ kwarg to the repository kwarg.
         :extension  (default \"*\")
 
     :repositories - {name url ..} | {name settings ..}
-      (defaults to {\"central\" \"http://repo1.maven.org/maven2/\"}
+      (defaults to {\"central\" \"https://repo1.maven.org/maven2/\"}
       settings:
       :url - URL of the repository
       :snapshots - use snapshots versions? (default true)
@@ -536,7 +565,7 @@ kwarg to the repository kwarg.
             interactive console program
         - a function of one argument, which will be called with a map derived from
             each event.
-        - an instance of org.sonatype.aether.transfer.TransferListener
+        - an instance of org.eclipse.aether.transfer.TransferListener
 
     :proxy - proxy configuration, can be nil, the host scheme and type must match
       :host - proxy hostname
@@ -678,8 +707,8 @@ kwarg to the repository kwarg.
   "Collects dependencies for the coordinates kwarg, using repositories from the
    `:repositories` kwarg.
    Retrieval of dependencies can be disabled by providing `:retrieve false` as a kwarg.
-   Returns an instance of either `org.sonatype.aether.collection.CollectResult` if
-   `:retrieve false` or `org.sonatype.aether.resolution.DependencyResult` if
+   Returns an instance of either `org.eclipse.aether.collection.CollectResult` if
+   `:retrieve false` or `org.eclipse.aether.resolution.DependencyResult` if
    `:retrieve true` (the default).  If you don't want to mess with the Aether
    implementation classes, then use `resolve-dependencies` instead.
 
@@ -699,7 +728,7 @@ kwarg to the repository kwarg.
       don't explicitly specify them.
 
     :repositories - {name url ..} | {name settings ..}
-      (defaults to {\"central\" \"http://repo1.maven.org/maven2/\"}
+      (defaults to {\"central\" \"https://repo1.maven.org/maven2/\"}
       settings:
       :url - URL of the repository
       :snapshots - use snapshots versions? (default true)
@@ -722,9 +751,9 @@ kwarg to the repository kwarg.
             interactive console program
         - a function of one argument, which will be called with a map derived from
             each event.
-        - an instance of org.sonatype.aether.transfer.TransferListener
+        - an instance of org.eclipse.aether.transfer.TransferListener
 
-    :proxy - proxy configuration, can be nil, the host scheme and type must match 
+    :proxy - proxy configuration, can be nil, the host scheme and type must match
       :host - proxy hostname
       :type - http  (default) | http | https
       :port - proxy port
@@ -764,13 +793,13 @@ kwarg to the repository kwarg.
         deps (coords->Dependencies files coordinates)
         managed-deps (coords->Dependencies files managed-coordinates)
         collect-request (doto (CollectRequest. deps
-                                managed-deps
-                                (vec (map #(let [repo (make-repository % proxy)]
-                                             (-> session
-                                               (.getMirrorSelector)
-                                               (.getMirror repo)
-                                               (or repo)))
-                                       repositories)))
+                                               managed-deps
+                                               (vec (map #(let [repo (make-repository % proxy)]
+                                                            (-> session
+                                                                (.getMirrorSelector)
+                                                                (.getMirror repo)
+                                                                (or repo)))
+                                                         repositories)))
                           (.setRequestContext "runtime"))]
     (if retrieve
       (.resolveDependencies system session (DependencyRequest. collect-request nil))
@@ -848,4 +877,3 @@ kwarg to the repository kwarg.
                     [root (dependency-hierarchy (dep-graph root) dep-graph)])]
     (when (seq hierarchy)
       (into (sorted-map-by #(apply compare (map coordinate-string %&))) hierarchy))))
-
