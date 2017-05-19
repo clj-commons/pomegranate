@@ -681,7 +681,7 @@ kwarg to the repository kwarg.
     (add-version-from-managed-coord coord (find-managed-coord coord managed-coords))
     coord))
 
-(defn- merge-versions-from-managed-coords
+(defn merge-versions-from-managed-coords
   "Given a vector of coordinates (e.g. [[group/name <\"version\"> & settings] ..])
   where the version field is optional or can be nil, and a vector of managed coordinates,
   returns an updated vector of coordinates with version numbers merged in from the
