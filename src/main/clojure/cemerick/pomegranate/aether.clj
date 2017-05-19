@@ -198,7 +198,8 @@
       (.setProxy repo-builder prx))
     repo-builder))
 
-(defn- make-repository
+(defn make-repository
+  "Produces an Aether RemoteRepository instance from Pomegranate-style repository information"
   [[id settings] proxy]
   (let [settings-map (if (string? settings)
                        {:url settings}
@@ -243,7 +244,8 @@
   [[group-artifact version & {:keys [scope optional exclusions]} :as dep-spec]]
   (DefaultArtifact. (coordinate-string dep-spec)))
 
-(defn- dependency
+(defn dependency
+  "Produces an Aether Dependency instance from Pomegranate-style dependency information"
   [[group-artifact version & {:keys [scope optional exclusions]
                               :as opts
                               :or {scope "compile"
