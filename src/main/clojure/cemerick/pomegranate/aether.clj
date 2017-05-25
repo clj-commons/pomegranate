@@ -205,7 +205,7 @@
                        {:url settings}
                        settings)]
     (.build
-     (doto (RemoteRepository$Builder. id
+     (doto (RemoteRepository$Builder. (and id (name id))
                                       (:type settings-map "default")
                                       (str (:url settings-map)))
        (set-policies settings-map)

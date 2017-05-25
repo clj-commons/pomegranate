@@ -16,7 +16,7 @@
 
 (def test-remote-repo {"central" "https://repo1.maven.org/maven2/"})
 
-(def test-repo {"test-repo" "file://test-repo"})
+(def test-repo {:test-repo "file://test-repo"})
 (def tmp-remote-repo {"tmp-remote-repo" (str "file://" tmp-remote-repo-dir)})
 
 (defn delete-recursive
