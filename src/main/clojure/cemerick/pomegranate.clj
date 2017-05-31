@@ -55,25 +55,34 @@
                                             classloaders)))))))
 
 (defn add-dependencies
-  "Resolves a set of dependencies, optionally against a set of additional Maven repositories,
-   and adds all of the resulting artifacts (jar files) to the current runtime via
-   `add-classpath`:
+  "Resolves a set of dependencies, optionally against a set of additional Maven
+   repositories, and adds all of the resulting artifacts (jar files) to the
+   current runtime via `add-classpath`:
 
-   (add-dependencies :coordinates '[[incanter \"1.2.3\"]]
+   (add-dependencies :classloader your-classloader
+                     :coordinates '[[incanter \"1.2.3\"]]
                      :repositories (merge cemerick.pomegranate.aether/maven-central
                                      {\"clojars\" \"https://clojars.org/repo\"}))
 
+   Note that the `:classloader` kwarg is optional; if not provided then resolved
+   dependencies will be added to the closest modifiable classloader in the
+   current thread's hierarchy, as per `add-classpath`.
+
+   Otherwise, acceptable arguments are the same as those for
+   `cemerick.pomegranate.aether/resolve-dependencies`; returns the dependency graph
+   returned from that function.
+
    Note that Maven central is used as the sole repository if none are specified.
    If :repositories are provided, then you must merge in the `maven-central` map from
-   the cemerick.pomegranate.aether namespace yourself.
-
-   Acceptable arguments are the same as those for
-   `cemerick.pomegranate.aether/resolve-dependencies`; returns the dependency graph
-   returned from that function."
+   the cemerick.pomegranate.aether namespace yourself."
   [& args]
-  (let [deps (apply aether/resolve-dependencies args)]
+  (let [classloader (-> (apply hash-map args)
+                        :classloader
+                        ; replace with some-> when we bump the clojure dep
+                        (#(when % [%])))
+        deps (apply aether/resolve-dependencies args)]
     (doseq [artifact-file (aether/dependency-files deps)]
-      (add-classpath artifact-file))
+      (apply add-classpath artifact-file classloader))
     deps))
 
 (defn get-classpath
