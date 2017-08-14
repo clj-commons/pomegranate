@@ -111,9 +111,7 @@
 
 (defn- repository-system
   []
-  (let [transporter-factory (doto (WagonTransporterFactory.)
-                              (.setWagonProvider (PomegranateWagonProvider.)))
-        error-handler (clojure.core/proxy [DefaultServiceLocator$ErrorHandler] []
+  (let [error-handler (clojure.core/proxy [DefaultServiceLocator$ErrorHandler] []
                         (serviceCreationFailed [type-clazz impl-clazz ^Throwable e]
                           (clojure.stacktrace/print-cause-trace e)))]
     (.getService
@@ -167,31 +165,32 @@
    (checksum-policies (:checksum policy-settings :fail))))
 
 (defn- set-policies
-  [repo settings]
-  (doto repo
+  [repo-builder settings]
+  (doto repo-builder
     (.setSnapshotPolicy (policy settings (:snapshots settings true)))
     (.setReleasePolicy (policy settings (:releases settings true)))))
 
+(defn- authentication
+  [{:keys [username password passphrase private-key-file] :as settings}]
+  (-> (AuthenticationBuilder.)
+      (.addUsername username)
+      (.addPassword password)
+      (.addPrivateKey private-key-file passphrase)
+      .build))
+
 (defn- set-authentication
-  "Calls the setAuthentication method on obj"
-  [obj {:keys [username password passphrase private-key-file] :as settings}]
+  [repo-builder {:keys [username password passphrase private-key-file] :as settings}]
   (if (or username password private-key-file passphrase)
-    (doto obj
-      (.setAuthentication
-       (.build
-        (doto (AuthenticationBuilder.)
-          (.addUsername username)
-          (.addPassword password)
-          (.addPrivateKey private-key-file passphrase)))))
-    obj))
+    (.setAuthentication repo-builder (authentication settings))
+    repo-builder))
 
 (defn- set-proxy
-  [repo-builder {:keys [type host port non-proxy-hosts ]
+  [repo-builder {:keys [type host port non-proxy-hosts]
                  :or {type "http"}
-                 :as proxy} ]
-  (if (and repo-builder host port)
+                 :as proxy}]
+  (if (and host port)
     (let [prx-sel (doto (DefaultProxySelector.)
-                    (.add (set-authentication (Proxy. type host port nil) proxy)
+                    (.add (Proxy. type host port (authentication proxy))
                           non-proxy-hosts))
           prx (.getProxy prx-sel (.build repo-builder))] ; ugg.
       ;; Don't know how to get around "building" the repo for this
