@@ -541,6 +541,23 @@
             ['tester "0.1.0-20120403.012847-1"] nil}
            (aether/dependency-hierarchy coords deps)))))
 
+(deftest make-repository-proxy-settings
+  (let [repo (first test-remote-repo)
+        proxy {:type "https"
+               :host "squid"
+               :port 3128}]
+    (testing "plain proxy"
+      (let [repo-proxy (->> proxy (aether/make-repository repo) .getProxy bean)]
+        (is (= proxy (select-keys repo-proxy (keys proxy))))
+        (is (not (:authentication repo-proxy)))))
+    (testing "authentication"
+      (let [repo-proxy (->> (assoc proxy :username "me" :password "123456")
+                            (aether/make-repository repo)
+                            .getProxy
+                            bean)]
+        (is (= proxy (select-keys repo-proxy (keys proxy))))
+        (is (:authentication repo-proxy))))))
+
 ;; taken from the test suite for the pendantic lib by Nelson Morris
 
 (defn get-versions [name repo]
