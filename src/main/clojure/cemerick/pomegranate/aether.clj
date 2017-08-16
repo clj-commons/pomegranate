@@ -456,16 +456,31 @@ kwarg to the repository kwarg.
                              (optional-artifact [:extension "pom"] pom-file)
                              (optional-artifact [] jar-file)))))))
 
+(defn- append-ordered-keys-metadata
+  [coll xs]
+  (and coll
+       (vary-meta coll update-in [:ordered-keys] (comp vec distinct concat) xs)))
+
+(defn- update-graph-with-dep
+  [graph ^DependencyNode node dep]
+  (let [spec (dep-spec dep)
+        child-deps (->> (.getChildren node)
+                        (map #(.getDependency %))
+                        (map dep-spec))]
+    (-> graph
+        (update-in [spec]
+                   (fn [coll more-deps]
+                     (-> coll
+                         (clojure.set/union (set more-deps))
+                         (append-ordered-keys-metadata more-deps)))
+                   child-deps)
+        (append-ordered-keys-metadata [spec]))))
+
 (defn- dependency-graph
   ([node]
     (reduce (fn [g ^DependencyNode n]
               (if-let [dep (.getDependency n)]
-                (update-in g [(dep-spec dep)]
-                           clojure.set/union
-                           (->> (.getChildren n)
-                             (map #(.getDependency %))
-                             (map dep-spec)
-                             set))
+                (update-graph-with-dep g n dep)
                 g))
             {}
             (tree-seq (constantly true)
@@ -809,18 +824,25 @@ kwarg to the repository kwarg.
 (defn resolve-dependencies
   "Same as `resolve-dependencies*`, but returns a graph of dependencies; each
    dependency's metadata contains the source Aether Dependency object, and
-   the dependency's :file on disk.  Please refer to `resolve-dependencies*` for details
-   on usage, or use it if you need access to Aether dependency resolution objects."
+   the dependency's :file on disk.  Due to the graph's being made up of unordered
+   data structures, the order of dependencies is arbitrary; however, ordering
+   information from the Ather DependencyNode object is provided at :ordered-keys
+   in metadata.  Please refer to `resolve-dependencies*` for details on usage, or
+   use it if you need access to Aether dependency resolution objects."
   [& args]
   (-> (apply resolve-dependencies* args)
     .getRoot
     dependency-graph))
 
+(defn- ordered-keys
+  [graph]
+  (or (:ordered-keys (meta graph)) (keys graph)))
+
 (defn dependency-files
   "Given a dependency graph obtained from `resolve-dependencies`, returns a seq of
    files from the dependencies' metadata."
   [graph]
-  (->> graph keys (map (comp :file meta)) (remove nil?)))
+  (->> graph ordered-keys (map (comp :file meta)) (remove nil?)))
 
 (defn- exclusion= [spec1 spec2]
   (let [[dep & opts] (normalize-exclusion-spec spec1)
@@ -869,12 +891,16 @@ kwarg to the repository kwarg.
 (defn dependency-hierarchy
   "Returns a dependency hierarchy based on the provided dependency graph
    (as returned by `resolve-dependencies`) and the coordinates that should
-   be the root(s) of the hierarchy.  Siblings are sorted alphabetically."
+   be the root(s) of the hierarchy.  Siblings are sorted alphabetically,
+   but ordering information originally obtained from the Aether dependency
+   object is provided at :ordered-keys in metadata."
   [root-coordinates dep-graph]
   (let [root-specs (map (comp dep-spec dependency) root-coordinates)
         hierarchy (for [root (filter
                               #(some (fn [root] (within? % root)) root-specs)
-                              (keys dep-graph))]
+                              (ordered-keys dep-graph))]
                     [root (dependency-hierarchy (dep-graph root) dep-graph)])]
     (when (seq hierarchy)
-      (into (sorted-map-by #(apply compare (map coordinate-string %&))) hierarchy))))
+      (append-ordered-keys-metadata
+        (into (sorted-map-by #(apply compare (map coordinate-string %&))) hierarchy)
+        (map first hierarchy)))))

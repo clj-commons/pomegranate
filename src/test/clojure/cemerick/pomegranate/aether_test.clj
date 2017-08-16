@@ -37,28 +37,43 @@
      (.getAbsolutePath file2)))
 
 (deftest live-resolution
-  (let [deps '[[commons-logging "1.1"]]
-        graph '{[javax.servlet/servlet-api "2.3"] nil,
-                [avalon-framework "4.1.3"] nil,
-                [logkit "1.0.1"] nil,
-                [log4j "1.2.12"] nil,
-                [commons-logging "1.1"]
-                #{[javax.servlet/servlet-api "2.3"] [avalon-framework "4.1.3"]
-                  [logkit "1.0.1"] [log4j "1.2.12"]}}
-        hierarchy '{[commons-logging "1.1"]
-                    {[avalon-framework "4.1.3"] nil,
-                     [javax.servlet/servlet-api "2.3"] nil,
-                     [log4j "1.2.12"] nil,
-                     [logkit "1.0.1"] nil}}]
-    (is (= graph (aether/resolve-dependencies :coordinates deps :retrieve false :local-repo tmp-local-repo-dir)))
-    (is (not (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir))))
+  (let [deps '[[commons-logging "1.1"]]]
+    (testing "produces dependency data structures"
+      (let [graph '{[javax.servlet/servlet-api "2.3"] nil,
+                    [avalon-framework "4.1.3"] nil,
+                    [logkit "1.0.1"] nil,
+                    [log4j "1.2.12"] nil,
+                    [commons-logging "1.1"]
+                    #{[javax.servlet/servlet-api "2.3"] [avalon-framework "4.1.3"]
+                      [logkit "1.0.1"] [log4j "1.2.12"]}}
+            hierarchy '{[commons-logging "1.1"]
+                        {[avalon-framework "4.1.3"] nil,
+                         [javax.servlet/servlet-api "2.3"] nil,
+                         [log4j "1.2.12"] nil,
+                         [logkit "1.0.1"] nil}}]
+        (is (= graph (aether/resolve-dependencies :coordinates deps :retrieve false :local-repo tmp-local-repo-dir)))
+        (is (not (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir))))
 
-    (doseq [[dep _] (aether/resolve-dependencies :coordinates deps :local-repo tmp-local-repo-dir)]
-      (is (-> dep meta :file))
-      (is (-> dep meta :file .exists)))
-    (is (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir)))
+        (doseq [[dep _] (aether/resolve-dependencies :coordinates deps :local-repo tmp-local-repo-dir)]
+          (is (-> dep meta :file))
+          (is (-> dep meta :file .exists)))
+        (is (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir)))
 
-    (is (= hierarchy (aether/dependency-hierarchy deps graph)))))
+        (is (= hierarchy (aether/dependency-hierarchy deps graph)))))
+
+    (testing "provides ordered keys in metadata"
+      (let [ordered-deps '[[log4j "1.2.12"]
+                           [logkit "1.0.1"]
+                           [avalon-framework "4.1.3"]
+                           [javax.servlet/servlet-api "2.3"]]
+            graph (aether/resolve-dependencies :coordinates deps
+                                               :retrieve false
+                                               :local-repo tmp-local-repo-dir)
+            hierarchy (aether/dependency-hierarchy deps graph)]
+        (is (= (concat deps ordered-deps) (-> graph meta :ordered-keys)))
+        (is (= ordered-deps (-> graph (get-in deps) meta :ordered-keys)))
+        (is (= deps (-> hierarchy meta :ordered-keys)))
+        (is (= ordered-deps (-> hierarchy (get-in deps) meta :ordered-keys)))))))
 
 (deftest live-artifact-resolution
   (let [deps '[[commons-logging "1.1"]]]
