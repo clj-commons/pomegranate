@@ -3,7 +3,7 @@
 [Pomegranate](https://github.com/cemerick/pomegranate) is a library that
 provides:
 
-1. A sane Clojure API for Sonatype
+1. A sane Clojure API for Eclipse
    [Aether](https://github.com/sonatype/sonatype-aether).
 2. A re-implementation of
    [`add-classpath`](https://clojure.github.com/clojure/clojure.core-api.html#clojure.core/add-classpath)
