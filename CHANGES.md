@@ -4,7 +4,7 @@
 
 * Non-TLS HTTP repositories are unsupported; using a "bare" HTTP repository now
   requires registering a "wagon" for the insecure transport method (gh-83)
-* Switched/upgraded from Sonatype Aether to Eclipse Aether (gh-80)
+* Switched/upgraded from Sonatype Aether to Maven-resolver (gh-80)
 * Upgraded to Maven `3.5.0` (gh-83)
 * `add-dependencies` now allows you to specify which `ClassLoader` to modify
   (gh-63)

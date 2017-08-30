@@ -3,15 +3,15 @@
 [Pomegranate](https://github.com/cemerick/pomegranate) is a library that
 provides:
 
-1. A sane Clojure API for Eclipse
-   [Aether](https://github.com/sonatype/sonatype-aether).
+1. A sane Clojure API for
+   [Maven-resolver](https://maven.apache.org/resolver/) (originally called Aether).
 2. A re-implementation of
    [`add-classpath`](https://clojure.github.com/clojure/clojure.core-api.html#clojure.core/add-classpath)
    (deprecated in Clojure core) that:
 
 * is a little more comprehensive than core's `add-classpath` — it should work as
   expected in more circumstances, and
-* optionally uses Aether to add a Maven artifact (and all of its transitive
+* optionally uses Maven-resolver to add a Maven artifact (and all of its transitive
   dependencies) to your Clojure runtime's classpath dynamically.
 
 Insofar as most useful Clojure libraries have dependencies, any reasonable
