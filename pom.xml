@@ -64,7 +64,7 @@
         <dependency>
           <groupId>org.tcrawley</groupId>
           <artifactId>dynapath</artifactId>
-          <version>0.2.5</version>
+          <version>1.0.0</version>
         </dependency>
         <!-- wagons for dependency resolution -->
         <dependency>
