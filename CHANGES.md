@@ -1,5 +1,12 @@
 ## [Pomegranate](http://github.com/cemerick/pomegranate) changelog
 
+### [`1.0.0`](https://github.com/cemerick/pomegranate/milestone/8?closed=1)
+
+* Ensures JDK 9 compatibility via dynapath 1.0.0; a non-trivial breaking change
+  given the effect of the change there to avoid JDK 9's warnings re: reflective
+  calls into non-public methods, etc (`URLClassLoader`s are no longer modifiable
+  by default) (gh-92)
+
 ### [`0.4.0`](https://github.com/cemerick/pomegranate/issues?q=milestone%3A0.4.0+is%3Aclosed)
 
 * Non-TLS HTTP repositories are unsupported; using a "bare" HTTP repository now

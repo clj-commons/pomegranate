@@ -24,7 +24,7 @@ Pomegranate is available in Maven central.  Add it to your Leiningen
 `project.clj`:
 
 ```clojure
-[com.cemerick/pomegranate "0.4.0"]
+[com.cemerick/pomegranate "1.0.0"]
 ```
 
 or to your Maven project's `pom.xml`:
@@ -33,7 +33,7 @@ or to your Maven project's `pom.xml`:
 <dependency>
   <groupId>com.cemerick</groupId>
   <artifactId>pomegranate</artifactId>
-  <version>0.4.0</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 
@@ -93,6 +93,18 @@ a particular dependency will rarely end well), which Pomegranate does not
 currently attempt to hide.  Thus, `add-classpath` and `add-dependencies` should
 be considered escape hatches to be used when necessary, rather than a regular
 part of your development workflow.
+
+#### `URLClassLoader` modifiability
+
+Starting with pomegranate `1.0.0`, `java.net.URLClassLoader`s are not modifiable
+by default. This is to accommodate new reflection policy starting with JDK 9
+(which currently issues an ugly warning on reflective access to non-public
+methods, but future releases will simply fail). If you are in a situation where
+you are using pomegranate but do not have a `clojure.lang.DynamicClassLoader`
+visible in your classloader hierarchy, you will need to explicitly enable the
+`java.net.URLClassLoader` support in
+[dynapath](https://github.com/tobias/dynapath) (upon which pomegranate relies
+for such things).
 
 ## Status of Aether support
 
