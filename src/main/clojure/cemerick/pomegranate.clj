@@ -1,5 +1,5 @@
 (ns cemerick.pomegranate
-  (:import (clojure.lang DynamicClassLoader)
+  (:import (clojure.lang DynamicClassLoader RT)
            (java.net URL URLClassLoader))
   (:require [clojure.java.io :as io]
             [cemerick.pomegranate.aether :as aether]
@@ -22,11 +22,17 @@
     (doto (.setAccessible true))
     (.invoke obj (into-array Object args))))
 
+(defn base-classloader []
+  (let [^DynamicClassLoader cl (RT/baseLoader)]
+    (if-let [^DynamicClassLoader parent (.getParent cl)]
+      parent
+      (or cl (.. Thread currentThread getContextClassLoader)))))
+
 (defn classloader-hierarchy
   "Returns a seq of classloaders, with the tip of the hierarchy first.
    Uses the current thread context ClassLoader as the tip ClassLoader
    if one is not provided."
-  ([] (classloader-hierarchy (.. Thread currentThread getContextClassLoader)))
+  ([] (classloader-hierarchy (base-classloader)))
   ([tip]
     (->> tip
       (iterate #(.getParent %))
