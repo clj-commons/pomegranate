@@ -1,7 +1,11 @@
 language: clojure
-install: mvn install --quiet -DskipTests=true
+install: mvn dependency:resolve
 script: mvn test
+cache:
+  directories:
+  - $HOME/.m2
 jdk:
   - openjdk7
   - oraclejdk8
   - oraclejdk9
+  - oraclejdk10
