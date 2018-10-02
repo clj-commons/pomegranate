@@ -1,5 +1,9 @@
 ## [Pomegranate](http://github.com/cemerick/pomegranate) changelog
 
+### [`1.1.0`](https://github.com/cemerick/pomegranate/milestone/9?closed=1)
+
+* Upgrade Maven Resolver dependencies (gh-103)
+
 ### [`1.0.0`](https://github.com/cemerick/pomegranate/milestone/8?closed=1)
 
 * Ensures JDK 9 compatibility via dynapath 1.0.0; a non-trivial breaking change
