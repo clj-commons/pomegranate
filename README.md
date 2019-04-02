@@ -69,7 +69,7 @@ do this though:
 ```clojure
 => (use '[cemerick.pomegranate :only (add-dependencies)])
 nil
-=> (add-dependencies :coordinates '[[incanter "1.2.3"]]
+=> (add-dependencies :coordinates '[[incanter "1.9.2"]]
                      :repositories (merge cemerick.pomegranate.aether/maven-central
                                           {"clojars" "https://clojars.org/repo"}))
 ;...add-dependencies returns full dependency graph...
