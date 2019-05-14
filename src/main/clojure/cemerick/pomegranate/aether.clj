@@ -30,7 +30,7 @@
            (org.apache.maven.repository.internal MavenRepositorySystemUtils)))
 
 (def ^{:private true} default-local-repo
-  (let ((m2_repo) (System/getenv "M2_REPO"))
+  (let ((m2_repo (System/getenv "M2_REPO")))
     (if (nil? m2_repo) 
         (io/file (System/getProperty "user.home") ".m2" "repository")
       (io/file m2_repo))))
