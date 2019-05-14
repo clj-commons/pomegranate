@@ -30,7 +30,10 @@
            (org.apache.maven.repository.internal MavenRepositorySystemUtils)))
 
 (def ^{:private true} default-local-repo
-  (io/file (System/getProperty "user.home") ".m2" "repository"))
+  (let ((m2_repo) (System/getenv "M2_REPO"))
+    (if (nil? m2_repo) 
+        (io/file (System/getProperty "user.home") ".m2" "repository")
+      (io/file m2_repo))))
 
 (def maven-central {"central" "https://repo1.maven.org/maven2/"})
 
@@ -325,7 +328,7 @@
       :private-key-file - private key file to log in with
       :update - :daily (default) | :always | :never
       :checksum - :fail (default) | :ignore | :warn
-  :local-repo - path to the local repository (defaults to ~/.m2/repository)
+  :local-repo - path to the local repository (defaults to $M2_HOME or ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies
 
   :proxy - proxy configuration, can be nil, the host scheme and type must match
@@ -364,7 +367,7 @@
   "Deploy the file kwarg using the coordinates kwarg to the repository kwarg.
 
   :files - same as with deploy-artifacts
-  :local-repo - path to the local repository (defaults to ~/.m2/repository)
+  :local-repo - path to the local repository (defaults to $M2_HOME or ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies"
   [& {:keys [files local-repo transfer-listener repository-session-fn]}]
   (let [system (repository-system)
@@ -408,7 +411,7 @@ kwarg to the repository kwarg.
       :update - :daily (default) | :always | :never
       :checksum - :fail (default) | :ignore | :warn
 
-  :local-repo - path to the local repository (defaults to ~/.m2/repository)
+  :local-repo - path to the local repository (defaults to $M2_HOME or ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies
 
   :proxy - proxy configuration, can be nil, the host scheme and type must match
@@ -441,7 +444,7 @@ kwarg to the repository kwarg.
   :artifact-map - a map from partial coordinates to file path or File
   :jar-file - a file pointing to the jar
   :pom-file - a file pointing to the pom
-  :local-repo - path to the local repository (defaults to ~/.m2/repository)
+  :local-repo - path to the local repository (defaults to $M2_HOME or ~/.m2/repository)
   :transfer-listener - same as provided to resolve-dependencies"
   [& {:keys [coordinates artifact-map jar-file pom-file] :as opts}]
   (when (empty? coordinates)
@@ -555,7 +558,7 @@ kwarg to the repository kwarg.
       :update - :daily (default) | :always | :never
       :checksum - :fail (default) | :ignore | :warn
 
-    :local-repo - path to the local repository (defaults to ~/.m2/repository)
+    :local-repo - path to the local repository (defaults to $M2_HOME or ~/.m2/repository)
     :offline? - if true, no remote repositories will be contacted
     :transfer-listener - the transfer listener that will be notifed of dependency
       resolution and deployment events.
@@ -741,7 +744,7 @@ kwarg to the repository kwarg.
       :update - :daily (default) | :always | :never
       :checksum - :fail (default) | :ignore | :warn
 
-    :local-repo - path to the local repository (defaults to ~/.m2/repository)
+    :local-repo - path to the local repository (defaults to $M2_HOME or ~/.m2/repository)
     :offline? - if true, no remote repositories will be contacted
     :transfer-listener - the transfer listener that will be notifed of dependency
       resolution and deployment events.
