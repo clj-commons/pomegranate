@@ -1,4 +1,4 @@
-# Pomegranate  [![Travis CI status](https://secure.travis-ci.org/clj-commons/pomegranate.png)](https://travis-ci.org/clj-commons/pomegranate/builds)
+# Pomegranate  [![CircleCI](https://circleci.com/gh/clj-commons/pomegranate.svg?style=svg)](https://circleci.com/gh/clj-commons/pomegranate)
 
 [Pomegranate](https://github.com/clj-commons/pomegranate) is a library that
 provides:
