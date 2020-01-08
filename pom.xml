@@ -5,7 +5,7 @@
     <version>1.1.1-SNAPSHOT</version>
     <name>pomegranate</name>
     <description />
-    <url>http://github.com/cemerick/pomegranate</url>
+    <url>http://github.com/clj-commons/pomegranate</url>
 
     <parent>
         <groupId>org.clojure</groupId>
@@ -23,9 +23,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:cemerick/pomegranate.git</connection>
-        <developerConnection>scm:git:git@github.com:cemerick/pomegranate.git</developerConnection>
-        <url>git@github.com:cemerick/pomegranate.git</url>
+        <connection>scm:git:git@github.com:clj-commons/pomegranate.git</connection>
+        <developerConnection>scm:git:git@github.com:clj-commons/pomegranate.git</developerConnection>
+        <url>git@github.com:clj-commons/pomegranate.git</url>
     </scm>
 
     <properties>

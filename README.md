@@ -1,6 +1,6 @@
-# Pomegranate  [![Travis CI status](https://secure.travis-ci.org/cemerick/pomegranate.png)](https://travis-ci.org/cemerick/pomegranate/builds)
+# Pomegranate  [![Travis CI status](https://secure.travis-ci.org/clj-commons/pomegranate.png)](https://travis-ci.org/clj-commons/pomegranate/builds)
 
-[Pomegranate](https://github.com/cemerick/pomegranate) is a library that
+[Pomegranate](https://github.com/clj-commons/pomegranate) is a library that
 provides:
 
 1. A sane Clojure API for
