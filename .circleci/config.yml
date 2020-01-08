@@ -42,3 +42,10 @@ jobs:
     docker:
       - image: circleci/openjdk:13-jdk
     <<: *shared
+
+workflows:
+  version: 2
+  work:
+    jobs:
+      - java-8
+      - java-13
