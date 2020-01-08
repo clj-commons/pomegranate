@@ -2,9 +2,10 @@
 #
 # Check https://circleci.com/docs/2.0/language-java/ for more details
 #
+---
 version: 2
 
-# from https://stackoverflow.com/questions/48991482/run-circleci-2-0-build-using-several-jdks
+# https://stackoverflow.com/questions/48991482/run-circleci-2-0-build-using-several-jdks
 shared: &shared
   working_directory: ~/repo
   environment:
@@ -37,7 +38,7 @@ jobs:
       - image: circleci/openjdk:8-jdk
     <<: *shared
 
- java-13:
-   docker:
-     - image: circleci/openjdk:13-jdk
-   <<: *shared
+  java-13:
+    docker:
+      - image: circleci/openjdk:13-jdk
+    <<: *shared
