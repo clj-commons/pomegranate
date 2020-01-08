@@ -2,6 +2,5 @@ language: clojure
 install: mvn install --quiet -DskipTests=true
 script: mvn test
 jdk:
-  - openjdk7
-  - oraclejdk8
-  - oraclejdk9
+  - openjdk8
+  - openjdk11
