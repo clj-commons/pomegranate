@@ -1,6 +1,0 @@
-language: clojure
-install: mvn install --quiet -DskipTests=true
-script: mvn test
-jdk:
-  - openjdk8
-  - openjdk11
