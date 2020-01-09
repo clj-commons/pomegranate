@@ -14,5 +14,5 @@ target
 classes
 it-repo
 tmp
-
+.cpcache
 .externalToolBuilders
