@@ -37,6 +37,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure</artifactId>
+      <version>${clojure.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
       <version>${mavenVersion}</version>
