@@ -1,4 +1,6 @@
-# Pomegranate  [![CircleCI](https://circleci.com/gh/clj-commons/pomegranate.svg?style=svg)](https://circleci.com/gh/clj-commons/pomegranate)
+# Pomegranate  
+[![Clojars Project](https://img.shields.io/clojars/v/clj-commons/pomegranate.svg)](https://clojars.org/clj-commons/pomegranate) 
+[![CircleCI](https://circleci.com/gh/clj-commons/pomegranate.svg?style=svg)](https://circleci.com/gh/clj-commons/pomegranate)
 
 [Pomegranate](https://github.com/clj-commons/pomegranate) is a library that
 provides:
@@ -24,17 +26,7 @@ Pomegranate is available in Maven central.  Add it to your Leiningen
 `project.clj`:
 
 ```clojure
-[com.cemerick/pomegranate "1.1.0"]
-```
-
-or to your Maven project's `pom.xml`:
-
-```xml
-<dependency>
-  <groupId>com.cemerick</groupId>
-  <artifactId>pomegranate</artifactId>
-  <version>1.1.0</version>
-</dependency>
+[clj-commons/pomegranate "1.1.1"]
 ```
 
 ## `add-classpath` usage
