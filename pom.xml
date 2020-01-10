@@ -28,6 +28,12 @@
     <tag>HEAD</tag>
   </scm>
 
+  <parent>
+    <groupId>org.clojure</groupId>
+    <artifactId>pom.contrib</artifactId>
+    <version>0.2.2</version>
+  </parent>
+
   <properties>
     <clojure.version>1.3.0</clojure.version>
     <mavenVersion>3.6.1</mavenVersion>
