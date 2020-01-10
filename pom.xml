@@ -4,9 +4,16 @@
     <artifactId>pomegranate</artifactId>
     <version>1.1.2-SNAPSHOT</version>
     <name>pomegranate</name>
-    <description />
+    <description>Pomegranate is a library that provides a sane Clojure API for Maven-resolver</description>
     <url>http://github.com/clj-commons/pomegranate</url>
 
+    <licenses>
+      <license>
+	<name>Eclipse Public License</name>
+	<url>http://www.eclipse.org/legal/epl-v10.html</url>
+      </license>
+    </licenses>
+    
     <developers>
         <developer>
             <name>Chas Emerick</name>
@@ -125,4 +132,22 @@
         </resources>
     </build>
 
+    <repositories>
+      <repository>
+	<id>clojars</id>
+	<url>https://repo.clojars.org/</url>
+      </repository>
+      <repository>
+	<id>sonatype</id>
+	<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+      </repository>
+    </repositories>
+
+    <distributionManagement>
+      <repository>
+	<id>clojars</id>
+	<name>Clojars repository</name>
+	<url>https://clojars.org/repo</url>
+      </repository>
+    </distributionManagement>
 </project>
