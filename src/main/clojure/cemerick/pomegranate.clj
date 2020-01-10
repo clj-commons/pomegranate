@@ -17,8 +17,8 @@
 
   The method-name is given a symbol or a keyword (something Named)."
   [klass method-name params obj & args]
-  (-> ^Class klass (.getDeclaredMethod (name method-name)
-                                       (into-array Class params))
+  (-> klass (.getDeclaredMethod (name method-name)
+                                (into-array Class params))
     (doto (.setAccessible true))
     (.invoke obj (into-array Object args))))
 
@@ -29,7 +29,7 @@
   ([] (classloader-hierarchy (.. Thread currentThread getContextClassLoader)))
   ([tip]
     (->> tip
-      (iterate #(.getParent ^ClassLoader %))
+      (iterate #(.getParent %))
       (take-while boolean))))
 
 (defn modifiable-classloader?

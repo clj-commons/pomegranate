@@ -4,7 +4,7 @@
             clojure.set
             [clojure.string :as str]
             clojure.stacktrace)
-  (:import (org.eclipse.aether RepositorySystem RepositorySystemSession)
+  (:import (org.eclipse.aether RepositorySystem)
            (org.eclipse.aether.transport.wagon WagonTransporterFactory
                                                WagonProvider)
            (org.eclipse.aether.transport.file FileTransporterFactory)
@@ -17,8 +17,8 @@
                                           MirrorSelector)
            (org.eclipse.aether.util.repository DefaultProxySelector AuthenticationBuilder)
            (org.eclipse.aether.graph Dependency Exclusion DependencyNode)
-           (org.eclipse.aether.collection CollectRequest CollectResult)
-           (org.eclipse.aether.resolution DependencyRequest DependencyResult ArtifactRequest
+           (org.eclipse.aether.collection CollectRequest)
+           (org.eclipse.aether.resolution DependencyRequest ArtifactRequest
                                           ArtifactResult VersionRequest)
            (org.eclipse.aether.artifact DefaultArtifact ArtifactProperties)
            (org.eclipse.aether.util.artifact SubArtifact)
@@ -106,7 +106,7 @@
                  (when (< 70 (+ 10 (count name) (count repository)))
                    (println) (print "    "))
                  (println (case method :get "from" :put "to") repository))
-      (:corrupted :failed) (when error (println (.getMessage ^Exception error)))
+      (:corrupted :failed) (when error (println (.getMessage error)))
       nil)))
 
 (defn- repository-system
@@ -138,9 +138,10 @@
 
 (defn repository-session
   [{:keys [repository-system local-repo offline? transfer-listener mirror-selector]}]
-  (let [session (doto (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newSession)
+  (let [session (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newSession)
+        session (doto session
                   (.setLocalRepositoryManager (.newLocalRepositoryManager
-                                               ^RepositorySystem repository-system
+                                               repository-system
                                                session
                                                (LocalRepository.
                                                 (io/file (or local-repo default-local-repo)))))
@@ -169,7 +170,7 @@
 
 (defn- set-policies
   [repo-builder settings]
-  (doto ^RemoteRepository$Builder repo-builder
+  (doto repo-builder
     (.setSnapshotPolicy (policy settings (:snapshots settings true)))
     (.setReleasePolicy (policy settings (:releases settings true)))))
 
@@ -177,14 +178,14 @@
   [{:keys [username password passphrase private-key-file] :as settings}]
   (-> (AuthenticationBuilder.)
       (.addUsername username)
-      (.addPassword ^String password)
-      (.addPrivateKey ^String private-key-file ^String passphrase)
+      (.addPassword password)
+      (.addPrivateKey private-key-file passphrase)
       .build))
 
 (defn- set-authentication
   [repo-builder {:keys [username password passphrase private-key-file] :as settings}]
   (if (or username password private-key-file passphrase)
-    (.setAuthentication ^RemoteRepository$Builder repo-builder (authentication settings))
+    (.setAuthentication repo-builder (authentication settings))
     repo-builder))
 
 (defn- set-proxy
@@ -195,9 +196,9 @@
     (let [prx-sel (doto (DefaultProxySelector.)
                     (.add (Proxy. type host port (authentication proxy))
                           non-proxy-hosts))
-          prx (.getProxy prx-sel (.build ^RemoteRepository$Builder repo-builder))] ; ugg.
+          prx (.getProxy prx-sel (.build repo-builder))] ; ugg.
       ;; Don't know how to get around "building" the repo for this
-      (.setProxy ^RemoteRepository$Builder repo-builder prx))
+      (.setProxy repo-builder prx))
     repo-builder))
 
 (defn make-repository
@@ -358,7 +359,7 @@
                   :local-repo local-repo
                   :offline? false
                   :transfer-listener transfer-listener})]
-    (.deploy ^RepositorySystem system session
+    (.deploy system session
              (doto (DeployRequest.)
                (.setArtifacts (vec (map (partial create-artifact files) (keys files))))
                (.setRepository (first (map #(make-repository % proxy) repository)))))))
@@ -377,7 +378,7 @@
                   :local-repo local-repo
                   :offline? false
                   :transfer-listener transfer-listener})]
-    (.install ^RepositorySystem system session
+    (.install system session
               (doto (InstallRequest.)
                 (.setArtifacts (vec (map (partial create-artifact files) (keys files))))))))
 
@@ -466,13 +467,13 @@ kwarg to the repository kwarg.
                 (update-in g [(dep-spec dep)]
                            clojure.set/union
                            (->> (.getChildren n)
-                             (map #(.getDependency ^DependencyNode %))
+                             (map #(.getDependency %))
                              (map dep-spec)
                              set))
                 g))
             {}
             (tree-seq (constantly true)
-                      #(seq (.getChildren ^DependencyNode %))
+                      #(seq (.getChildren %))
                       node))))
 
 (defn- mirror-selector-fn
@@ -609,25 +610,25 @@ kwarg to the repository kwarg.
                   :mirror-selector mirror-selector})
         deps (->> coordinates
                   (map #(if-let [local-file (get files %)]
-                          (-> ^Artifact (artifact %)
+                          (-> (artifact %)
                               (.setProperties
                                {ArtifactProperties/LOCAL_PATH
                                 (.getPath (io/file local-file))}))
                           (artifact %)))
                   vec)
         repositories (vec (map #(let [repo (make-repository % proxy)]
-                                  (-> ^RepositorySystemSession session
+                                  (-> session
                                       (.getMirrorSelector)
                                       (.getMirror repo)
                                       (or repo)))
                                repositories))]
     (if retrieve
       (.resolveArtifacts
-       ^RepositorySystem system session (map #(ArtifactRequest. % repositories nil) deps))
+       system session (map #(ArtifactRequest. % repositories nil) deps))
       (doall
        (for [dep deps]
          (.resolveVersion
-          ^RepositorySystem system session (VersionRequest. dep repositories nil)))))))
+          system session (VersionRequest. dep repositories nil)))))))
 
 (defn resolve-artifacts
   "Same as `resolve-artifacts*`, but returns a sequence of dependencies; each
@@ -699,8 +700,8 @@ kwarg to the repository kwarg.
   [files coordinates]
   (->> coordinates
        (map #(if-let [local-file (get files %)]
-              (.setArtifact ^Dependency (dependency %)
-                            (-> ^Dependency (dependency %)
+              (.setArtifact (dependency %)
+                            (-> (dependency %)
                                 .getArtifact
                                 (.setProperties {ArtifactProperties/LOCAL_PATH
                                                  (.getPath (io/file local-file))})))
@@ -796,19 +797,18 @@ kwarg to the repository kwarg.
         coordinates (merge-versions-from-managed-coords coordinates managed-coordinates)
         deps (coords->Dependencies files coordinates)
         managed-deps (coords->Dependencies files managed-coordinates)
-        collect-request (doto (CollectRequest. ^java.util.List deps
-                                               ^java.util.List managed-deps
-                                               ^java.util.List
+        collect-request (doto (CollectRequest. deps
+                                               managed-deps
                                                (vec (map #(let [repo (make-repository % proxy)]
-                                                            (-> ^RepositorySystemSession session
+                                                            (-> session
                                                                 (.getMirrorSelector)
                                                                 (.getMirror repo)
                                                                 (or repo)))
                                                          repositories)))
                           (.setRequestContext "runtime"))]
     (if retrieve
-      (.resolveDependencies ^RepositorySystem system session (DependencyRequest. collect-request nil))
-      (.collectDependencies ^RepositorySystem system session collect-request))))
+      (.resolveDependencies system session (DependencyRequest. collect-request nil))
+      (.collectDependencies system session collect-request))))
 
 (defn resolve-dependencies
   "Same as `resolve-dependencies*`, but returns a graph of dependencies; each
@@ -816,14 +816,9 @@ kwarg to the repository kwarg.
    the dependency's :file on disk.  Please refer to `resolve-dependencies*` for details
    on usage, or use it if you need access to Aether dependency resolution objects."
   [& args]
-  (let [result (apply resolve-dependencies* args)]
-    (if (instance? DependencyResult result)
-      (-> ^DependencyResult result
-          .getRoot
-          dependency-graph)
-      (-> ^CollectResult result
-          .getRoot
-          dependency-graph))))
+  (-> (apply resolve-dependencies* args)
+    .getRoot
+    dependency-graph))
 
 (defn dependency-files
   "Given a dependency graph obtained from `resolve-dependencies`, returns a seq of
