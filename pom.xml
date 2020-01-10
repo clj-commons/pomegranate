@@ -1,17 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.cemerick</groupId>
+    <groupId>clj-commons</groupId>
     <artifactId>pomegranate</artifactId>
     <version>1.1.1-SNAPSHOT</version>
     <name>pomegranate</name>
-    <description />
+    <description/>
     <url>http://github.com/clj-commons/pomegranate</url>
-
-    <parent>
-        <groupId>org.clojure</groupId>
-        <artifactId>pom.contrib</artifactId>
-        <version>0.2.2</version>
-    </parent>
 
     <developers>
         <developer>
@@ -129,6 +124,13 @@
                 <directory>src/main/clojure</directory>
             </resource>
         </resources>
-    </build>
+    <sourceDirectory>src/main/clojure</sourceDirectory>
+  </build>
 
+<repositories>
+    <repository>
+      <id>clojars</id>
+      <url>https://repo.clojars.org/</url>
+    </repository>
+  </repositories>
 </project>

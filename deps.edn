@@ -19,4 +19,12 @@
                   :extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
                                                           :sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}
                                org.slf4j/slf4j-simple {:mvn/version "1.7.26"}}
-                  :main-opts ["-m" "cognitect.test-runner" "-d" "src/test/clojure"]}}}
+                  :main-opts ["-m" "cognitect.test-runner" "-d" "src/test/clojure"]}
+           :jar {:extra-deps {seancorfield/depstar {:mvn/version "RELEASE"}}
+                 :main-opts ["-m" "hf.depstar.jar" "pomegranate.jar"]}
+           :deploy {:extra-deps {deps-deploy {:mvn/version "RELEASE"}}
+                    :main-opts ["-m" "deps-deploy.deps-deploy" "deploy"
+                                "pomegranate.jar" "true"]}
+           :install {:extra-deps {deps-deploy {:mvn/version "RELEASE"}}
+                     :main-opts ["-m" "deps-deploy.deps-deploy" "install"
+                                 "pomegranate.jar" "true"]}}}
