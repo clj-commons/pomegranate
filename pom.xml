@@ -6,7 +6,13 @@
   <version>1.1.1</version>
   <name>pomegranate</name>
   <description>Pomegranate is a library that provides a sane Clojure API for Maven-resolver</description>
-  <url>http://github.com/clj-commons/pomegranate</url>
+  <url>https://github.com/clj-commons/pomegranate</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License</name>
+      <url>http://www.eclipse.org/legal/epl-v10.html</url>
+    </license>
+  </licenses>
   <developers>
     <developer>
       <name>Chas Emerick</name>
@@ -16,9 +22,9 @@
     </developer>
   </developers>
   <scm>
-    <connection>scm:git:git@github.com:clj-commons/pomegranate.git</connection>
-    <developerConnection>scm:git:git@github.com:clj-commons/pomegranate.git</developerConnection>
-    <url>git@github.com:clj-commons/pomegranate.git</url>
+    <url>https://github.com/clj-commons/pomegranate</url>
+    <connection>scm:git:git://github.com:clj-commons/pomegranate.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:clj-commons/pomegranate.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
   <dependencies>
@@ -106,6 +112,16 @@
   <build>
     <sourceDirectory>src/main/clojure</sourceDirectory>
   </build>
+  <repositories>
+    <repository>
+      <id>clojars</id>
+      <url>https://repo.clojars.org/</url>
+    </repository>
+    <repository>
+      <id>sonatype</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </repository>
+  </repositories>
   <distributionManagement>
     <repository>
       <id>clojars</id>
