@@ -1,5 +1,6 @@
 {:paths ["src/main/clojure"]
  :deps {org.apache.maven/maven-resolver-provider {:mvn/version "3.6.0"}
+
         org.apache.maven.resolver/maven-resolver-transport-file {:mvn/version "1.3.3"}
         org.apache.maven.resolver/maven-resolver-transport-http {:mvn/version "1.3.3"}
         org.apache.maven.resolver/maven-resolver-transport-wagon {:mvn/version "1.3.3"}
