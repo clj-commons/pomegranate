@@ -321,8 +321,6 @@
      :local-repo tmp-local-repo-dir))
   (is (= 3 (count (.list (io/file tmp-local-repo-dir "group" "artifact" "1.0.0"))))))
 
-(java.lang.System/setProperty "aether.checksums.forSignature" "true")
-
 (deftest deploy-artifacts
   (aether/deploy-artifacts
    :artifacts '[[demo "1.0.0"]

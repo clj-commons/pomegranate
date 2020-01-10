@@ -138,16 +138,20 @@
 
 (defn repository-session
   [{:keys [repository-system local-repo offline? transfer-listener mirror-selector]}]
-  (let [session (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newSession)]
-    (doto session
-      (.setLocalRepositoryManager (.newLocalRepositoryManager
-                                   repository-system
-                                   session
-                                   (LocalRepository.
-                                    (io/file (or local-repo default-local-repo)))))
-      (.setMirrorSelector mirror-selector)
-      (.setOffline (boolean offline?))
-      (.setTransferListener (construct-transfer-listener transfer-listener)))))
+  (let [session (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newSession)
+        session (doto session
+                  (.setLocalRepositoryManager (.newLocalRepositoryManager
+                                               repository-system
+                                               session
+                                               (LocalRepository.
+                                                (io/file (or local-repo default-local-repo)))))
+                  (.setMirrorSelector mirror-selector)
+                  (.setOffline (boolean offline?))
+                  (.setTransferListener (construct-transfer-listener transfer-listener)))]
+    (if (contains? (.getConfigProperties session) "aether.checksums.forSignature")
+      session
+      (doto session
+        (.setConfigProperty "aether.checksums.forSignature" true)))))
 
 (def update-policies {:daily RepositoryPolicy/UPDATE_POLICY_DAILY
                       :always RepositoryPolicy/UPDATE_POLICY_ALWAYS
