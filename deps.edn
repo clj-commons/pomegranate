@@ -9,7 +9,8 @@
         org.apache.maven.resolver/maven-resolver-transport-wagon {:mvn/version "1.3.3"}
         org.apache.maven.resolver/maven-resolver-connector-basic {:mvn/version "1.3.3"}
         org.tcrawley/dynapath {:mvn/version "1.0.0"}
-        org.apache.maven.wagon/wagon-provider-api {:mvn/version "3.3.2"}
+        org.apache.maven.wagon/wagon-provider-api {:mvn/version "3.3.2"
+                                                   :exclusions [org.codehaus.plexus/plexus-utils]}
         org.apache.maven.wagon/wagon-http {:mvn/version "3.3.2"}
         org.apache.maven.wagon/wagon-ssh {:mvn/version "3.3.2"}
         org.apache.httpcomponents/httpclient {:mvn/version "4.5.8"}
