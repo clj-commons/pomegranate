@@ -23,9 +23,11 @@
                   :main-opts ["-m" "cognitect.test-runner" "-d" "src/test/clojure"]}
            :jar {:extra-deps {seancorfield/depstar {:mvn/version "RELEASE"}}
                  :main-opts ["-m" "hf.depstar.jar" "pomegranate.jar"]}
-           :deploy {:extra-deps {deps-deploy {:mvn/version "RELEASE"}}
+           :deploy {:extra-deps {slipset/deps-deploy {:git/url "https://github.com/slipset/deps-deploy.git"
+                                                      :sha "b4359c5d67ca002d9ed0c4b41b710d7e5a82e3bf"}}
                     :main-opts ["-m" "deps-deploy.deps-deploy" "deploy"
                                 "pomegranate.jar" "true"]}
-           :install {:extra-deps {deps-deploy {:mvn/version "RELEASE"}}
+           :install {:extra-deps {slipset/deps-deploy {:git/url "https://github.com/slipset/deps-deploy.git"
+                                                       :sha "b4359c5d67ca002d9ed0c4b41b710d7e5a82e3bf"}}
                      :main-opts ["-m" "deps-deploy.deps-deploy" "install"
                                  "pomegranate.jar" "true"]}}}
