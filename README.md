@@ -26,7 +26,7 @@ Pomegranate is available in Maven central.  Add it to your Leiningen
 `project.clj`:
 
 ```clojure
-[clj-commons/pomegranate "1.2.0"]
+[clj-commons/pomegranate "1.2.1"]
 ```
 
 ## `add-classpath` usage
