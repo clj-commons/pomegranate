@@ -1,5 +1,9 @@
 ## [Pomegranate](http://github.com/cemerick/pomegranate) changelog
 
+### [`1.2.1`]
+
+* Upgrade wagon libs from 3.2.2 -> 3.3.4
+
 ### [`1.1.0`](https://github.com/cemerick/pomegranate/milestone/9?closed=1)
 
 * Upgrade Maven Resolver dependencies (gh-103)

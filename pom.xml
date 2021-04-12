@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>clj-commons</groupId>
   <artifactId>pomegranate</artifactId>
-  <version>1.2.0</version>
+  <version>1.2.1</version>
   <name>pomegranate</name>
   <description>Pomegranate is a library that provides a sane Clojure API for Maven-resolver</description>
   <url>https://github.com/clj-commons/pomegranate</url>
@@ -38,7 +38,7 @@
     <clojure.version>1.3.0</clojure.version>
     <mavenVersion>3.6.1</mavenVersion>
     <resolverVersion>1.3.3</resolverVersion>
-    <wagonVersion>3.3.2</wagonVersion>
+    <wagonVersion>3.3.4</wagonVersion>
   </properties>
 
   <dependencies>
