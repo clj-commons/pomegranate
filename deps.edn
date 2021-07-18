@@ -27,4 +27,8 @@
                                 "pomegranate.jar" "true"]}
            :install {:extra-deps {deps-deploy {:mvn/version "RELEASE"}}
                      :main-opts ["-m" "deps-deploy.deps-deploy" "install"
-                                 "pomegranate.jar" "true"]}}}
+                                 "pomegranate.jar" "true"]}
+
+           :eastwood {:main-opts  ["-m" "eastwood.lint" {:exclude-namespaces [cognitect.test-runner]
+                                                         :ignored-faults {:local-shadows-var {cemerick.pomegranate.aether true}}}]
+                      :extra-deps {jonase/eastwood {:mvn/version "0.9.2"}}}}}
