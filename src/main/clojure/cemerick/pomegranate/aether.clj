@@ -170,7 +170,7 @@
 
 (defn- set-policies
   [repo-builder settings]
-  (doto ^RemoteRepository$Builder repo-builder
+  (doto ^org.eclipse.aether.repository.RemoteRepository$Builder repo-builder
     (.setSnapshotPolicy (policy settings (:snapshots settings true)))
     (.setReleasePolicy (policy settings (:releases settings true)))))
 
@@ -185,7 +185,7 @@
 (defn- set-authentication
   [repo-builder {:keys [username password passphrase private-key-file] :as settings}]
   (if (or username password private-key-file passphrase)
-    (.setAuthentication ^RemoteRepository$Builder repo-builder (authentication settings))
+    (.setAuthentication ^org.eclipse.aether.repository.RemoteRepository$Builder repo-builder (authentication settings))
     repo-builder))
 
 (defn- set-proxy
@@ -196,14 +196,14 @@
     (let [prx-sel (doto (DefaultProxySelector.)
                     (.add (Proxy. type host port (authentication proxy))
                           non-proxy-hosts))
-          prx (.getProxy prx-sel (.build ^RemoteRepository$Builder repo-builder))] ; ugg.
+          prx (.getProxy prx-sel (.build ^org.eclipse.aether.repository.RemoteRepository$Builder repo-builder))] ; ugg.
       ;; Don't know how to get around "building" the repo for this
-      (.setProxy ^RemoteRepository$Builder repo-builder prx))
+      (.setProxy ^org.eclipse.aether.repository.RemoteRepository$Builder repo-builder prx))
     repo-builder))
 
 (defn make-repository
   "Produces an Aether RemoteRepository instance from Pomegranate-style repository information"
-  ^RemoteRepository
+  ^org.eclipse.aether.repository.RemoteRepository
   [[id settings] proxy]
   (let [settings-map (if (string? settings)
                        {:url settings}
