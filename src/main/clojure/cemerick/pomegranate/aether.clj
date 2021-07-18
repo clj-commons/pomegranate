@@ -203,6 +203,7 @@
 
 (defn make-repository
   "Produces an Aether RemoteRepository instance from Pomegranate-style repository information"
+  ^RemoteRepository
   [[id settings] proxy]
   (let [settings-map (if (string? settings)
                        {:url settings}

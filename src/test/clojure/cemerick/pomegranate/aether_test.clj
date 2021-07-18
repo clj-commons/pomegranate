@@ -1,7 +1,9 @@
 (ns cemerick.pomegranate.aether-test
   (:require [cemerick.pomegranate.aether :as aether]
-            [clojure.java.io :as io])
-  (:use [clojure.test]))
+            [clojure.java.io :as io]
+            [clojure.string])
+  (:use [clojure.test])
+  (:import (java.io File)))
 
 (deftest dependency-roundtripping
   (are [x] (= x (#'aether/dep-spec (#'aether/dependency x)))
@@ -20,7 +22,7 @@
 (def tmp-remote-repo {"tmp-remote-repo" (str "file://" tmp-remote-repo-dir)})
 
 (defn delete-recursive
-  [dir]
+  [^File dir]
   (when (.isDirectory dir)
     (doseq [file (.listFiles dir)]
       (delete-recursive file)))
@@ -32,7 +34,7 @@
 
 (use-fixtures :each clear-tmp)
 
-(defn file-path-eq [file1 file2]
+(defn file-path-eq [^File file1 ^File file2]
   (= (.getAbsolutePath file1)
      (.getAbsolutePath file2)))
 
@@ -51,12 +53,12 @@
                      [log4j "1.2.12"] nil,
                      [logkit "1.0.1"] nil}}]
     (is (= graph (aether/resolve-dependencies :coordinates deps :retrieve false :local-repo tmp-local-repo-dir)))
-    (is (not (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir))))
+    (is (not (some #(-> ^File % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir))))
 
     (doseq [[dep _] (aether/resolve-dependencies :coordinates deps :local-repo tmp-local-repo-dir)]
       (is (-> dep meta :file))
-      (is (-> dep meta :file .exists)))
-    (is (some #(-> % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir)))
+      (is (-> dep meta ^File (:file) .exists)))
+    (is (some #(-> ^File % .getName (.endsWith ".jar")) (file-seq tmp-local-repo-dir)))
 
     (is (= hierarchy (aether/dependency-hierarchy deps graph)))))
 
@@ -69,13 +71,13 @@
                      :coordinates '[[demo "1.0.0"]] :retrieve false
                      :files {'[demo "1.0.0"] (io/file "test-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar")}
                      :local-repo tmp-local-repo-dir))))
-    (is (not (some #(-> % .getName (.endsWith ".jar"))
+    (is (not (some #(-> ^File % .getName (.endsWith ".jar"))
                    (file-seq tmp-local-repo-dir))))
     (doseq [dep (aether/resolve-artifacts
                      :coordinates deps :local-repo tmp-local-repo-dir)]
       (is (-> dep meta :file))
-      (is (-> dep meta :file .exists)))
-    (is (some #(-> % .getName (.endsWith ".jar"))
+      (is (-> dep meta ^File (:file) .exists)))
+    (is (some #(-> ^File % .getName (.endsWith ".jar"))
               (file-seq tmp-local-repo-dir)))))
 
 (deftest impl-detail-types
@@ -92,7 +94,7 @@
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+           (.getAbsolutePath ^File (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-wildcard-mirror
   (let [deps (aether/resolve-dependencies :repositories {"clojars" "https://clojars.org/repo"}
@@ -101,7 +103,7 @@
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+           (.getAbsolutePath ^File (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-wildcard-override-mirror
   (let [deps (aether/resolve-dependencies :repositories test-remote-repo
@@ -111,7 +113,7 @@
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "javax" "servlet" "servlet-api" "2.5" "servlet-api-2.5.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+           (.getAbsolutePath ^File (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps
   (let [deps (aether/resolve-dependencies :repositories test-repo
@@ -119,7 +121,7 @@
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+           (.getAbsolutePath ^File (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-deps
   (let [deps (aether/resolve-dependencies :repositories test-repo
@@ -149,7 +151,7 @@
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+           (.getAbsolutePath ^File (first (aether/dependency-files deps)))))))
 
 (deftest resolve-deps-with-classifiers
   (let [deps (aether/resolve-dependencies :repositories test-repo
@@ -158,7 +160,7 @@
                                           :local-repo tmp-local-repo-dir)]
     (is (= 1 (count deps)))
     (is (= (.getAbsolutePath (io/file tmp-dir "local-repo" "demo" "demo" "1.0.1" "demo-1.0.1-test.jar"))
-           (.getAbsolutePath (first (aether/dependency-files deps)))))))
+           (.getAbsolutePath ^File (first (aether/dependency-files deps)))))))
 
 (deftest resolve-managed-dependencies
   (testing "supports coordinates w/o version number, with managed coordinates"
@@ -637,7 +639,7 @@
                                                  :checksum :ignore}}
                                  :local-repo tmp-local-repo-dir)
     (is (= #{"local-repo" "a" "1" "a-1.pom" "_remote.repositories" "a-1.jar"}
-           (set (map (memfn getName) (file-seq tmp-local-repo-dir)))))))
+           (set (map (memfn ^File getName) (file-seq tmp-local-repo-dir)))))))
 
 (comment
   "tests needed for:
