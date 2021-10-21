@@ -8,7 +8,7 @@ provides:
 1. A sane Clojure API for
    [Maven-resolver](https://maven.apache.org/resolver/) (originally called Aether).
 2. A re-implementation of
-   [`add-classpath`](https://clojure.github.com/clojure/clojure.core-api.html#clojure.core/add-classpath)
+   [`add-classpath`](https://clojure.github.io/clojure/clojure.core-api.html#clojure.core/add-classpath)
    (deprecated in Clojure core) that:
 
 * is a little more comprehensive than core's `add-classpath` — it should work as
