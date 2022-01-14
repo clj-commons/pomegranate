@@ -598,6 +598,9 @@ kwarg to the repository kwarg.
   [& {:keys [repositories coordinates files retrieve local-repo
              transfer-listener offline? proxy mirrors repository-session-fn]
       :or {retrieve true}}]
+  (when repositories
+    (assert (seq repositories)
+            "Empty but truthy `repositories` value found. Please set to nil for using the default, or add a non-empty coll of repositories."))
   (let [repositories (or repositories maven-central)
         system (repository-system)
         mirror-selector-fn (memoize (partial mirror-selector-fn mirrors))
