@@ -1,0 +1,3 @@
+{"delete-config?": false,
+ "nvd": {"suppression-file": "./suppressions.xml",
+         "data-directory": "/home/runner/.nvd-cache/"}}
