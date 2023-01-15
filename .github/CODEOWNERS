@@ -1,1 +1,4 @@
-* @glts @slipset @lread
+# Code owners are auto-invited to review PRs including files matching specified pattern(s).
+# We opt out of this by only matching the CODEOWNERS file itself.
+.github/CODEOWNERS @slipset @lread
+# For a CODEOWNERS file to be valid, owners must have repo write privs, for this reason remove @glts for now
