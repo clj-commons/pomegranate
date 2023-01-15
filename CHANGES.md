@@ -1,5 +1,11 @@
 ## [Pomegranate](http://github.com/cemerick/pomegranate) changelog
 
+### Unreleased
+
+* Bump stale deps, some of which had vulnerabilities ([#134](https://github.com/clj-commons/pomegranate/issues/134)) ([@lread](https://github.com/lread))
+* General quality
+  * Added automated check for vulnerabilities in dependencies ([@lread](https://github.com/lread))
+
 ### [`1.2.1`]
 
 * Upgrade wagon libs from 3.2.2 -> 3.3.4
