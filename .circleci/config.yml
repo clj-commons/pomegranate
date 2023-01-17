@@ -17,10 +17,10 @@ shared: &shared
     - run:
         name: Install Clojure
         command: |
-          wget -nc https://download.clojure.org/install/linux-install-1.10.3.855.sh
-          chmod +x linux-install-1.10.3.855.sh
-          sudo ./linux-install-1.10.3.855.sh
-             
+          wget -nc https://download.clojure.org/install/linux-install-1.11.1.1208.sh
+          chmod +x linux-install-1.11.1.1208.sh
+          sudo ./linux-install-1.11.1.1208.sh
+
     # Download and cache dependencies
     # - restore_cache:
     #    keys:
@@ -38,7 +38,7 @@ shared: &shared
     # run tests!
     - run: mvn test
     # lint (especially reflection warnings)
-    - run: clojure -A:test:eastwood
+    - run: clojure -M:test:eastwood
 
 jobs:
   java-8:

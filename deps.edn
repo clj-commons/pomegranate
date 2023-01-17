@@ -17,21 +17,19 @@
         org.apache.httpcomponents/httpcore {:mvn/version "4.4.16"}}
 
  :aliases {:test {:extra-paths ["src/test/clojure"]
-                  :extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git"
-                                                          :sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}
-                               org.slf4j/slf4j-simple {:mvn/version "1.7.26"}}
+                  :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
+                               org.slf4j/slf4j-simple {:mvn/version "2.0.6"}}
                   :main-opts ["-m" "cognitect.test-runner" "-d" "src/test/clojure"]}
            :jar {:extra-deps {seancorfield/depstar {:mvn/version "RELEASE"}}
                  :main-opts ["-m" "hf.depstar.jar" "pomegranate.jar"]}
            :deploy {:extra-deps {slipset/deps-deploy {:git/url "https://github.com/slipset/deps-deploy.git"
-                                                      :sha "b4359c5d67ca002d9ed0c4b41b710d7e5a82e3bf"}}
+                                                      :sha "fd8ff2de9c4bda82a1c69c387d56217473b394be"}}
                     :main-opts ["-m" "deps-deploy.deps-deploy" "deploy"
                                 "pomegranate.jar" "true"]}
            :install {:extra-deps {slipset/deps-deploy {:git/url "https://github.com/slipset/deps-deploy.git"
-                                                       :sha "b4359c5d67ca002d9ed0c4b41b710d7e5a82e3bf"}}
+                                                       :sha "fd8ff2de9c4bda82a1c69c387d56217473b394be"}}
                      :main-opts ["-m" "deps-deploy.deps-deploy" "install"
                                  "pomegranate.jar" "true"]}
-
            :eastwood {:main-opts  ["-m" "eastwood.lint" {:exclude-namespaces [cognitect.test-runner]
                                                          :ignored-faults {:local-shadows-var {cemerick.pomegranate.aether true}}}]
-                      :extra-deps {jonase/eastwood {:mvn/version "1.1.1"}}}}}
+                      :extra-deps {jonase/eastwood {:mvn/version "1.3.0"}}}}}
