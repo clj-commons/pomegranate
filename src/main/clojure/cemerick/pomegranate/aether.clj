@@ -4,7 +4,7 @@
             clojure.set
             [clojure.string :as str]
             clojure.stacktrace)
-  (:import (org.eclipse.aether RepositorySystem RepositorySystemSession)
+  (:import (org.eclipse.aether RepositorySystem RepositorySystemSession DefaultRepositorySystemSession)
            (org.eclipse.aether.transport.wagon WagonTransporterFactory
                                                WagonProvider)
            (org.eclipse.aether.transport.file FileTransporterFactory)
@@ -136,6 +136,26 @@
 
     :else (TransferListenerProxy. (fn [_]))))
 
+(defn- generate-checksums-by-default
+  "Return repository `session` configured with pomegranate checksum defaults.
+
+  By default, maven resolver does not generate checksums for .asc files, but pomegranate prefers to do so.
+
+  We automatically upconvert the legacy (and removed) `aether.checksums.forSignature`
+  to its replacement `aether.checksums.omitChecksumsForExtensions`.
+  If both options are specified `aether.checksums.omitChecksumsForExtensions` takes precedence."
+  [^DefaultRepositorySystemSession session]
+  (let [config (.getConfigProperties session)
+        option "aether.checksums.omitChecksumsForExtensions"
+        value-to-generate-checksums "" ;; as per maven docs
+        value (get config option)
+        legacy-option "aether.checksums.forSignature"
+        legacy-value (get config legacy-option)]
+    (if (and (nil? value)
+             (or (nil? legacy-value) (= "true" legacy-value) (true? legacy-value)))
+      (.setConfigProperty session option value-to-generate-checksums)
+      session)))
+
 (defn repository-session
   [{:keys [repository-system local-repo offline? transfer-listener mirror-selector]}]
   (let [session (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newSession)
@@ -148,10 +168,7 @@
                   (.setMirrorSelector mirror-selector)
                   (.setOffline (boolean offline?))
                   (.setTransferListener (construct-transfer-listener transfer-listener)))]
-    (if (contains? (.getConfigProperties session) "aether.checksums.forSignature")
-      session
-      (doto session
-        (.setConfigProperty "aether.checksums.forSignature" true)))))
+    (generate-checksums-by-default session)))
 
 (def update-policies {:daily RepositoryPolicy/UPDATE_POLICY_DAILY
                       :always RepositoryPolicy/UPDATE_POLICY_ALWAYS
