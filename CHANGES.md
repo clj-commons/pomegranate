@@ -2,9 +2,19 @@
 
 ### Unreleased
 
-* Bump stale deps, some of which had vulnerabilities ([#134](https://github.com/clj-commons/pomegranate/issues/134)) ([@lread](https://github.com/lread))
+* Bump stale deps, some of which had vulnerabilities
+([#134](https://github.com/clj-commons/pomegranate/issues/134))
+([@lread](https://github.com/lread))
+* Don't accept empty but truthy `:repositories`
+([@vemv](https://github.com/vemv))
+([#133](https://github.com/clj-commons/pomegranate/pull/133))
 * General quality
-  * Added automated check for vulnerabilities in dependencies ([@lread](https://github.com/lread))
+  * Add automated check for vulnerabilities in dependencies
+  ([@lread](https://github.com/lread))
+  ([#135](https://github.com/clj-commons/pomegranate/pull/135))
+  * Address all reflection warnings
+  ([@vemv](https://github.com/vemv))
+  ([#131](https://github.com/clj-commons/pomegranate/pull/131))
 
 ### [`1.2.1`]
 
