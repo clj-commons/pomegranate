@@ -38,7 +38,7 @@ shared: &shared
     # run tests!
     - run: mvn test
     # lint (especially reflection warnings)
-    - run: clojure -A:test:eastwood
+    - run: clojure -M:test:eastwood
 
 jobs:
   java-8:
