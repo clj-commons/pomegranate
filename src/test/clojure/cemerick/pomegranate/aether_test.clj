@@ -23,15 +23,20 @@
 (def tmp-remote-repo {"tmp-remote-repo" (str "file://" tmp-remote-repo-dir)})
 
 (defn delete-recursive
-  [^File dir]
-  (when (.isDirectory dir)
-    (doseq [file (.listFiles dir)]
+  [^File file]
+  (when (.isDirectory file)
+    (doseq [file (.listFiles file)]
       (delete-recursive file)))
-  (.delete dir))
+  (println "attempting to delete" (str file))
+  (if (not (.delete file))
+    (throw (ex-info (str "failed to delete: " (str file)) {}))
+    (println "deleted:" (str file))))
 
 (defn- clear-tmp
   [f]
-  (delete-recursive (io/file tmp-dir)) (f))
+  (when (.exists tmp-dir)
+    (println "clear-tmp: " tmp-dir)
+    (delete-recursive tmp-dir)) (f))
 
 (use-fixtures :each clear-tmp)
 
