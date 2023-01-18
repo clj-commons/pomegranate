@@ -21,6 +21,8 @@ jobs:
     steps:
     #
     # Tell git not to convert newlines on checkout for Windows
+    # Our tests include a maven test repo whose checksums would be affected by newline
+    # conversion.
     #
     - name: Prepare git (Windows)
       run: git config --global core.autocrlf false
