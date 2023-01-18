@@ -1,7 +1,7 @@
 # Pomegranate
-[![Clojars Project](https://img.shields.io/clojars/v/clj-commons/pomegranate.svg)](https://clojars.org/clj-commons/pomegranate) 
-[![CircleCI](https://circleci.com/gh/clj-commons/pomegranate.svg?style=svg)](https://circleci.com/gh/clj-commons/pomegranate)
-[![nvd scanner](https://github.com/clj-commons/pomegranate/actions/workflows/nvd_scanner.yml/badge.svg)](https://github.com/clj-commons/promegranate/actions/workflows/nvd_scanner.yml)
+[![Clojars Project](https://img.shields.io/clojars/v/clj-commons/pomegranate.svg)](https://clojars.org/clj-commons/pomegranate)
+[![Tests](https://github.com/clj-commons/pomegranate/actions/workflows/tests.yml/badge.svg)](https://github.com/clj-commons/pomegranate/actions/workflows/tests.yml)
+[![Vulnerability Scan](https://github.com/clj-commons/pomegranate/actions/workflows/nvd_scanner.yml/badge.svg)](https://github.com/clj-commons/promegranate/actions/workflows/nvd_scanner.yml)
 [![Join chat](https://img.shields.io/badge/slack-join_chat-brightgreen.svg)](https://clojurians.slack.com/archives/C04KJME1UPL)
 
 [Pomegranate](https://github.com/clj-commons/pomegranate) is a library that
