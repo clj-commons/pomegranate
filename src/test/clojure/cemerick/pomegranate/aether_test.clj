@@ -27,16 +27,14 @@
   (when (.isDirectory file)
     (doseq [file (.listFiles file)]
       (delete-recursive file)))
-  (println "attempting to delete" (str file))
-  (if (not (.delete file))
-    (throw (ex-info (str "failed to delete: " (str file)) {}))
-    (println "deleted:" (str file))))
+  (when (not (.delete file))
+    (throw (ex-info (str "failed to delete: " (str file)) {}))))
 
 (defn- clear-tmp
   [f]
-  (when (.exists tmp-dir)
-    (println "clear-tmp: " tmp-dir)
-    (delete-recursive tmp-dir)) (f))
+  (when (.exists ^File tmp-dir)
+    (delete-recursive tmp-dir))
+  (f))
 
 (use-fixtures :each clear-tmp)
 
