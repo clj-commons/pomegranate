@@ -1,0 +1,89 @@
+= Developer Guide
+:toclevels: 5
+:toc:
+
+== Audience
+You want contribute to, or learn about, the development of the pomegranate library.
+
+== Contributing
+
+We very much appreciate contributions from the community.
+
+=== Issue First Please
+
+If you have an idea or a fix, please do raise a GitHub issue before investing in any coding effort.
+That way we can discuss first.
+Writing code is the easy part, maintaining it forever is the hard part.
+
+That said, if you notice a simple typo, a PR without an issue is fine.
+
+=== Submitting a Pull Request
+
+Please never force push on your PR, as this makes reviewing incremental changes impossible for us.
+When we merge your PR, we'll usually squash it, so that will clean up any rambling work in progress.
+
+== Environmental Overview
+
+=== Developer Prerequisites
+
+The current version of Babashka.
+The current version of Clojure.
+JDK8+
+
+=== Foundational Library
+
+Leiningen and other tools rely on pomegranate behaving the way it does.
+We must be very careful when making changes.
+
+== Docs
+
+All documentation is written in AsciiDoc. (coming soon)
+@lread likes to follow https://asciidoctor.org/docs/asciidoc-recommended-practices/#one-sentence-per-line[AsciiDoc best practice of one sentence per line] but won't be entirely pedantic about that.
+
+We host our docs on cljdoc. (coming soon)
+
+== The Public API
+
+When making changes to pomegranate understand that any public method is considered part of the public API.
+
+We must be careful not to expose what we feel are implementation details.
+
+== Babashka Tasks
+
+We use Babashka tasks, to see all available tasks run:
+
+[source,shell]
+----
+bb tasks
+----
+
+Optionally:
+
+[source,shell]
+----
+$ bb clean
+$ bb download-deps
+----
+
+Run all Clojure tests
+
+[source,shell]
+----
+$ bb test
+----
+
+You can also include cognitect test runner options:
+
+[source,shell]
+----
+$ bb test --var 'clj-yaml.core-test/emoji-can-be-parsed'
+----
+
+...and/or Clojure version:
+
+[source,shell]
+----
+$ bb test --clj-version 1.9
+----
+(defaults to `1.8`, specify `:all` to test against all supported Clojure versions)
+

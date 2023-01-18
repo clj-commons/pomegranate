@@ -1,5 +1,6 @@
 (ns cemerick.pomegranate.aether-test
   (:require [cemerick.pomegranate.aether :as aether]
+            [cemerick.pomegranate.test-report]
             [clojure.java.io :as io]
             [clojure.string])
   (:use [clojure.test])

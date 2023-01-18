@@ -1,0 +1,50 @@
+name: 'shared setup'
+inputs:
+  jdk:
+    description: 'jdk version'
+    required: true
+  shell:
+    # shell must be specified for run:s for composite actions
+    description: 'which shell to use'
+    required: false
+    default: bash
+
+runs:
+  using: 'composite'
+
+  steps:
+    - name: Clojure deps cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.m2/repository
+          ~/.deps.clj
+          ~/.gitlibs
+        key: cljdeps-${{ hashFiles('deps.edn', 'bb.edn') }}
+        restore-keys: cljdeps-
+
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: ${{ inputs.jdk }}
+
+    - name: Install Clojure Tools
+      uses: DeLaGuardo/setup-clojure@10.1
+      with:
+        cli: 'latest'
+        bb: 'latest'
+
+    - name: Tools Versions
+      shell: ${{ inputs.shell }}
+      run: |
+        echo "java -version"
+        java -version
+        echo "bb --version"
+        bb --version
+        echo "clojure --version"
+        clojure --version
+
+    - name: Download Clojure Dependencies
+      shell: ${{ inputs.shell }}
+      run: bb download-deps

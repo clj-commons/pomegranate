@@ -1,5 +1,6 @@
 (ns cemerick.pomegranate-test
   (:require [cemerick.pomegranate :as p]
+            [cemerick.pomegranate.test-report]
             clojure.java.io)
   (:use clojure.test))
 
