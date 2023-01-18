@@ -9,6 +9,9 @@
 ([@vemv](https://github.com/vemv))
 ([#133](https://github.com/clj-commons/pomegranate/pull/133))
 * General quality
+  * Automated testing now covers Linux, Windows, current JDKs, and Clojure v1.8+
+  ([@lread](https://github.com/lread))
+  ([#137](https://github.com/clj-commons/pomegranate/issues/137))
   * Add automated check for vulnerabilities in dependencies
   ([@lread](https://github.com/lread))
   ([#135](https://github.com/clj-commons/pomegranate/pull/135))

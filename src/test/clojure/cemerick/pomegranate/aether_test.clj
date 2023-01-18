@@ -1,5 +1,6 @@
 (ns cemerick.pomegranate.aether-test
   (:require [cemerick.pomegranate.aether :as aether]
+            [cemerick.pomegranate.test-report]
             [clojure.java.io :as io]
             [clojure.string])
   (:use [clojure.test])
@@ -22,15 +23,18 @@
 (def tmp-remote-repo {"tmp-remote-repo" (str "file://" tmp-remote-repo-dir)})
 
 (defn delete-recursive
-  [^File dir]
-  (when (.isDirectory dir)
-    (doseq [file (.listFiles dir)]
+  [^File file]
+  (when (.isDirectory file)
+    (doseq [file (.listFiles file)]
       (delete-recursive file)))
-  (.delete dir))
+  (when (not (.delete file))
+    (throw (ex-info (str "failed to delete: " (str file)) {}))))
 
 (defn- clear-tmp
   [f]
-  (delete-recursive (io/file tmp-dir)) (f))
+  (when (.exists ^File tmp-dir)
+    (delete-recursive tmp-dir))
+  (f))
 
 (use-fixtures :each clear-tmp)
 

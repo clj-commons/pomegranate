@@ -1,0 +1,41 @@
+name: tests
+on:
+  # allow this workflow to be called from other workflows, namely: publish
+  workflow_call:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os.name }}-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [{name: 'windows', shell: 'pwsh'}, {name: 'ubuntu', shell: 'bash'}]
+        jdk: ['8', '11', '17', '19']
+
+    name: ${{matrix.os.name}} - jdk ${{ matrix.jdk }}
+
+    steps:
+    #
+    # Tell git not to convert newlines on checkout for Windows
+    # Our tests include a maven test repo whose checksums would be affected by newline
+    # conversion.
+    #
+    - name: Prepare git (Windows)
+      run: git config --global core.autocrlf false
+      if: matrix.os.name == 'windows'
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup
+      uses: ./.github/workflows/shared-setup
+      with:
+        jdk: ${{ matrix.jdk }}
+        shell: ${{ matrix.os.shell }}
+
+    - name: Run tests
+      run: bb test --clj-version :all

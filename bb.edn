@@ -1,0 +1,22 @@
+{:paths ["script"]
+ :deps {lread/status-line {:git/url "https://github.com/lread/status-line.git"
+                           :sha "cf44c15f30ea3867227fa61ceb823e5e942c707f"}}
+ :tasks {;; setup
+         :requires ([babashka.fs :as fs]
+                    [clojure.string :as string]
+                    [lread.status-line :as status])
+         :enter (let [{:keys [name]} (current-task)] (status/line :head "TASK %s %s" name (string/join " " *command-line-args*)))
+         :leave (let [{:keys [name]} (current-task)] (status/line :detail "\nTASK %s done." name))
+
+         ;; tasks
+         clean
+         {:doc "delete build work"
+          :task (when (fs/exists? "target")
+                  (fs/delete-tree "target"))}
+         download-deps
+         {:doc "bring down Clojure deps"
+          :task download-deps/-main}
+         test
+         {:doc "Runs tests under Clojure [--clj-version] (recognizes cognitect test-runner args)"
+          :requires ([test-clj])
+          :task (apply test-clj/-main *command-line-args*)}}}
