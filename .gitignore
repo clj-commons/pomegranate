@@ -16,3 +16,4 @@ it-repo
 tmp
 .cpcache
 .externalToolBuilders
+.eastwood

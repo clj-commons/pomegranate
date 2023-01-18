@@ -19,4 +19,7 @@
          test
          {:doc "Runs tests under Clojure [--clj-version] (recognizes cognitect test-runner args)"
           :requires ([test-clj])
-          :task (apply test-clj/-main *command-line-args*)}}}
+          :task (apply test-clj/-main *command-line-args*)}
+         lint-eastwood
+         {:doc "Lint source code with Eastwood"
+          :task (clojure "-M:test:eastwood")}}}
