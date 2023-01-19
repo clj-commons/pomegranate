@@ -1,26 +1,8 @@
 (ns cemerick.pomegranate
-  (:import (clojure.lang DynamicClassLoader)
-           (java.net URL URLClassLoader))
   (:require [clojure.java.io :as io]
             [cemerick.pomegranate.aether :as aether]
             [dynapath.util :as dp])
   (:refer-clojure :exclude (add-classpath)))
-
-;; call-method pulled from clojure.contrib.reflect, (c) 2010 Stuart Halloway & Contributors
-(defn- call-method
-  "Calls a private or protected method.
-
-  params is a vector of classes which correspond to the arguments to
-  the method e
-
-  obj is nil for static methods, the instance object otherwise.
-
-  The method-name is given a symbol or a keyword (something Named)."
-  [^Class klass method-name params obj & args]
-  (-> klass (.getDeclaredMethod (name method-name)
-                                (into-array Class params))
-    (doto (.setAccessible true))
-    (.invoke obj (into-array Object args))))
 
 (defn classloader-hierarchy
   "Returns a seq of classloaders, with the tip of the hierarchy first.
@@ -45,7 +27,7 @@
    to add that path to the right classloader (with the search rooted at the current
    thread's context classloader)."
   ([jar-or-dir classloader]
-     (if-not (dp/add-classpath-url classloader (.toURL (.toURI (io/file jar-or-dir))))
+     (when-not (dp/add-classpath-url classloader (.toURL (.toURI (io/file jar-or-dir))))
        (throw (IllegalStateException. (str classloader " is not a modifiable classloader")))))
   ([jar-or-dir]
     (let [classloaders (classloader-hierarchy)]

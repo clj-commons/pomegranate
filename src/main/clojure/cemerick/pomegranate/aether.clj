@@ -1,9 +1,9 @@
 (ns cemerick.pomegranate.aether
   (:refer-clojure :exclude  [type proxy])
   (:require [clojure.java.io :as io]
-            clojure.set
+            [clojure.set :as cset]
             [clojure.string :as str]
-            clojure.stacktrace)
+            [clojure.stacktrace :as stacktrace])
   (:import (org.eclipse.aether RepositorySystem RepositorySystemSession DefaultRepositorySystemSession)
            (org.eclipse.aether.transport.wagon WagonTransporterFactory
                                                WagonProvider)
@@ -12,8 +12,8 @@
            (org.eclipse.aether.artifact Artifact)
            (org.eclipse.aether.spi.connector RepositoryConnectorFactory)
            (org.eclipse.aether.spi.connector.transport TransporterFactory)
-           (org.eclipse.aether.repository Proxy  Authentication
-                                          RepositoryPolicy LocalRepository RemoteRepository RemoteRepository$Builder
+           (org.eclipse.aether.repository Proxy
+                                          RepositoryPolicy LocalRepository RemoteRepository$Builder
                                           MirrorSelector)
            (org.eclipse.aether.util.repository DefaultProxySelector AuthenticationBuilder)
            (org.eclipse.aether.graph Dependency Exclusion DependencyNode)
@@ -21,7 +21,6 @@
            (org.eclipse.aether.resolution DependencyRequest DependencyResult ArtifactRequest
                                           ArtifactResult VersionRequest)
            (org.eclipse.aether.artifact DefaultArtifact ArtifactProperties)
-           (org.eclipse.aether.util.artifact SubArtifact)
            (org.eclipse.aether.deployment DeployRequest)
            (org.eclipse.aether.installation InstallRequest)
            (org.eclipse.aether.util.version GenericVersionScheme)
@@ -57,13 +56,13 @@
 
 (deftype PomegranateWagonProvider []
   WagonProvider
-  (release [_ wagon])
+  (release  [_ _wagon])
   (lookup [_ role-hint]
           (when-let [f (get @wagon-factories role-hint)]
             (try
               (f)
               (catch Exception e
-                (clojure.stacktrace/print-cause-trace e)
+                (stacktrace/print-cause-trace e)
                 (throw e))))))
 
 (deftype TransferListenerProxy [listener-fn]
@@ -94,8 +93,8 @@
                 :trace (.getTrace r)})})
 
 (defn- default-listener-fn
-  [{:keys [type method transferred resource error] :as evt}]
-  (let [{:keys [name size repository transfer-start-time]} resource]
+  [{:keys [type method _transferred resource error] :as _evt}]
+  (let [{:keys [name size repository _transfer-start-time]} resource]
     (case type
       :started (do
                  (print (case method :get "Retrieving" :put "Sending")
@@ -113,7 +112,7 @@
   []
   (let [error-handler (clojure.core/proxy [DefaultServiceLocator$ErrorHandler] []
                         (serviceCreationFailed [type-clazz impl-clazz ^Throwable e]
-                          (clojure.stacktrace/print-cause-trace e)))]
+                          (stacktrace/print-cause-trace e)))]
     (.getService
      (doto (MavenRepositorySystemUtils/newServiceLocator)
        (.setService TransporterFactory WagonTransporterFactory)
@@ -192,7 +191,7 @@
     (.setReleasePolicy (policy settings (:releases settings true)))))
 
 (defn- authentication
-  [{:keys [username password passphrase private-key-file] :as settings}]
+  [{:keys [username password passphrase private-key-file] :as _settings}]
   (-> (AuthenticationBuilder.)
       (.addUsername username)
       (.addPassword ^String password)
@@ -262,15 +261,15 @@
     spec))
 
 (defn- artifact
-  [[group-artifact version & {:keys [scope optional exclusions]} :as dep-spec]]
+  [[_group-artifact _version & {:keys [_scope _optional _exclusions]} :as dep-spec]]
   (DefaultArtifact. (coordinate-string dep-spec)))
 
 (defn dependency
   "Produces an Aether Dependency instance from Pomegranate-style dependency information"
-  [[group-artifact version & {:keys [scope optional exclusions]
-                              :as opts
-                              :or {scope "compile"
-                                   optional false}}
+  [[_group-artifact _version & {:keys [scope optional exclusions]
+                                :as _opts
+                                :or {scope "compile"
+                                     optional false}}
     :as dep-spec]]
   (Dependency. (artifact dep-spec)
                scope
@@ -483,7 +482,7 @@ kwarg to the repository kwarg.
     (reduce (fn [g ^DependencyNode n]
               (if-let [dep (.getDependency n)]
                 (update-in g [(dep-spec dep)]
-                           clojure.set/union
+                           cset/union
                            (->> (.getChildren n)
                              (map #(.getDependency ^DependencyNode %))
                              (map dep-spec)
@@ -500,8 +499,8 @@ kwarg to the repository kwarg.
    The second argument should be a repository spec, also as described in
    resolve-dependencies.  Will return the mirror spec that matches the
    provided repository spec."
-  [mirrors {:keys [name url snapshots releases]}]
-  (let [mirrors (filter (fn [[matcher mirror-spec]]
+  [mirrors {:keys [name url _snapshots _releases]}]
+  (let [mirrors (filter (fn [[matcher _mirror-spec]]
                           (or
                             (and (string? matcher) (or (= matcher name) (= matcher url)))
                             (and (instance? java.util.regex.Pattern matcher)
@@ -679,7 +678,7 @@ kwarg to the repository kwarg.
     (throw (IllegalArgumentException. (str "Provided artifact is missing a version: " coord)))))
 
 (defn- coordinates-match?
-  [[dep version & opts] [sdep sversion & sopts]]
+  [[dep _version & opts] [sdep _sversion & sopts]]
   (let [om (apply hash-map opts)
         som (apply hash-map sopts)]
     (and
@@ -879,7 +878,7 @@ kwarg to the repository kwarg.
   "Determines if the first coordinate would be a version in the second
    coordinate. The first coordinate is not allowed to contain a
    version range."
-  [[dep version & opts :as coord] [sdep sversion & sopts :as scoord]]
+  [[_dep version & opts :as coord] [_sdep sversion & sopts :as scoord]]
   (let [om (apply hash-map opts)
         som (apply hash-map sopts)]
     (and (coordinates-match? coord scoord)

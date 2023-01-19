@@ -8,6 +8,21 @@ on:
     branches: [ "master" ]
 
 jobs:
+  lint-kondo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/workflows/shared-setup
+        with:
+          jdk: '11'
+
+      - name: Lint
+        run: bb lint-kondo
+
   lint-eastwood:
     runs-on: ubuntu-latest
 

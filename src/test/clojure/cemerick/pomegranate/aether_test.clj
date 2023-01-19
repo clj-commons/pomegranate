@@ -2,8 +2,8 @@
   (:require [cemerick.pomegranate.aether :as aether]
             [cemerick.pomegranate.test-report]
             [clojure.java.io :as io]
-            [clojure.string])
-  (:use [clojure.test])
+            [clojure.string :as str]
+            [clojure.test :refer [deftest is are testing use-fixtures]])
   (:import (java.io File)))
 
 (deftest dependency-roundtripping
@@ -577,12 +577,12 @@
   <packaging>jar</packaging>
   <version>" version "</version>
   <name>" name "</name>"
-  (if-not (empty? deps)
+  (when-not (empty? deps)
     (apply str
            "<dependencies>"
-           (clojure.string/join "\n"
-                                (for [[n v] deps]
-                                  (str "<dependency>
+           (str/join "\n"
+                     (for [[n v] deps]
+                       (str "<dependency>
                    <groupId>" n "</groupId>
                    <artifactId>"n"</artifactId>
                    <version>"v"</version>
@@ -596,9 +596,9 @@
   <artifactId>" name "</artifactId>
   <versioning>
   <versions>"
-  (clojure.string/join "\n"
-                       (for [v versions]
-                         (str "<version>"v"</version>")))
+  (str/join "\n"
+            (for [v versions]
+              (str "<version>"v"</version>")))
     "</versions>
     <lastUpdated>20120810193549</lastUpdated>
   </versioning>
@@ -625,7 +625,7 @@
         (setTimeout [_ _])
         (setInteractive [_ _])
         (get [_ name file]
-          (let [[n _ version] (clojure.string/split name #"/")]
+          (let [[n _ version] (str/split name #"/")]
             (if (= name (str n "/" n "/maven-metadata.xml"))
               (if-let [versions (get-versions n fake-repo)]
                 (spit file (make-metadata n versions))
