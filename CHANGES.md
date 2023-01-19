@@ -18,6 +18,9 @@
   * Address all reflection warnings
   ([@vemv](https://github.com/vemv))
   ([#131](https://github.com/clj-commons/pomegranate/pull/131))
+  * Add automated clj-kondo linting
+  ([@lread](https://github.com/lread))
+  ([#139](https://github.com/clj-commons/pomegranate/pull/139))
 
 ### [`1.2.1`]
 

@@ -17,3 +17,5 @@ tmp
 .cpcache
 .externalToolBuilders
 .eastwood
+# for kondo and lsp caches
+.cache

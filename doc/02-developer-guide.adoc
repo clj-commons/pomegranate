@@ -87,9 +87,12 @@ $ bb test --clj-version 1.9
 ----
 (defaults to `1.8`, specify `:all` to test against all supported Clojure versions)
 
-Our CI workflow lints sources with eastwood - and you can too!
+Our CI workflow lints sources with clj-kondo, and eastwood - and you can too!
 
 [source,shell]
 ----
+$ bb lint-kondo
 $ bb lint-eastwood
 ----
+
+Or to run both: `bb lint`

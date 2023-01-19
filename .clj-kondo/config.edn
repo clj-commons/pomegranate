@@ -1,0 +1,3 @@
+{:config-paths ^:replace [] ;; don't include user configs
+ :linters {:used-underscored-binding {:level :warning}
+           :aliased-namespace-symbol {:level :warning}}}

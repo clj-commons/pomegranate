@@ -20,6 +20,12 @@
          {:doc "Runs tests under Clojure [--clj-version] (recognizes cognitect test-runner args)"
           :requires ([test-clj])
           :task (apply test-clj/-main *command-line-args*)}
+         lint-kondo
+         {:doc "[--rebuild] Lint source code with clj-kondo"
+          :task lint/-main}
          lint-eastwood
          {:doc "Lint source code with Eastwood"
-          :task (clojure "-M:test:eastwood")}}}
+          :task (clojure "-M:test:eastwood")}
+         lint
+         {:doc "Run all lints"
+          :depends [lint-kondo lint-eastwood]} }}
