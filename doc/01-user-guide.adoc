@@ -1,0 +1,298 @@
+= User Guide
+:toclevels: 5
+:toc:
+:lib-version: 1.2.1
+
+== Audience
+You want to learn more about how to use the Pomegranate library from your app or library.
+
+== Introduction
+
+Pomegranate is a library that provides:
+
+1. A sane Clojure API for the https://maven.apache.org/resolver[Maven Artifact Resolver]. 
+2. A re-implementation of Clojure core's deprecated https://clojure.github.io/clojure/clojure.core-api.html#clojure.core/add-classpath[`add-classpath`] that:
+** is a little more comprehensive, it should work as expected in more circumstances
+** optionally uses the Maven Artifact Resolver to add a Maven artifact (and all of its transitive dependencies) to your Clojure runtime's classpath dynamically.
+
+NOTE: When Pomegranate was created, the Maven Artifact Resolver was called Aether, so you'll see `aether` in our APIs and docs.
+
+=== Interesting Alternatives
+
+If Pomegranate is not your cup of tea, consider having a look at:
+
+* https://github.com/clojure/tools.deps[clojure/tools.deps]
++
+It also includes resolving dependencies using the Maven Artifact Resolver.
+Unlike Pomegranate, by design, it is focused on runtime dependencies only.
++
+It does https://github.com/clojure/tools.deps/tree/add-lib3[have a branch that supports adding deps at runtime], but this work is experimental and may never get merged to master.
+* https://github.com/lambdaisland/classpath[com.lambdaisland.classpath]
++
+Experimental utilities for dealing with "the classpath", and dynamically loading libraries.
+
+=== History
+
+* Oct 2011 - The first version of `cemerick/pomegranate` is released to Maven Central.
+* Jan 2020 - Clj-commons adopts Pomegranate where it can get some ongoing love and care.
+It makes its first release under `clj-commons/pomegranate` to Clojars.
+
+== Installation
+
+=== Leiningen `project.clj`
+
+[source,clojure,subs="attributes+"]
+----
+[clj-commons/pomegrante "{lib-version}"]
+----
+
+=== Clojure CLI `deps.edn`
+
+[source,clojure,subs="attributes+"]
+----
+clj-commons/pomegranate {:mvn/version "{lib-version}"}
+----
+
+=== As a Git Dependency
+
+To get the latest changes that are not yet released to Clojars, you can use this library as a git dependency, for example:
+
+[source,clojure]
+----
+$ cat deps.edn
+{:deps {clj-commons/pomegranate {:git/url "https://github.com/clj-commons/pomegranate.git"
+                                 :git/sha "4db42b2091f363bff48cbb80bc5230c3afa598d9"}}}
+----
+
+Replace the `:git/sha` value as appropriate.
+
+== Usage
+
+=== Modifying the Classpath
+
+To set the stage: you're at the REPL, and you've got some useful data that you'd like to munge and analyze in various ways.
+Maybe it's something you've generated locally, maybe it's data on a production machine, and you're logged in via https://github.com/clojure/tools.nrepl[nREPL].
+In any case, you'd like to work with the data, but realize that you don't have the libraries you need do what you want.
+Your choices at this point are:
+
+1. Dump the data to disk via `pr` (assuming it's just Clojure data structures!), and start up a new Clojure process with the appropriate libraries on the classpath.
+This can really suck if the data is in a remote environment.
+2. There is no second choice.  
+You _could_ use Clojure's deprecated `add-claspath`, but the libraries you want to add have 12 bajillion dependencies, and there's no way you're going to hunt them down manually.
+
+Let's say we want to use https://github.com/liebke/incanter[Incanter].
+Incanter has roughly 40 dependencies — far too many for us to reasonably locate and add via `add-classpath` manually:
+
+[source,clojure]
+----
+user=> (require '[incanter core stats charts])
+Execution error (FileNotFoundException) at user/eval1 (REPL:1).
+Could not locate incanter/core__init.class, incanter/core.clj or incanter/core.cljc on classpath.
+----
+
+Looks bleak. 
+Assuming you've got Pomegranate on your classpath already, you can do this though:
+
+[source,clojure]
+----
+user=> (require '[cemerick.pomegranate :as pom] 
+                '[cemerick.pomegranate.aether :as aether])
+nil
+user=> (pom/add-dependencies :coordinates '[[incanter "1.9.2"]]
+                             :repositories (merge aether/maven-central 
+                                                  {"clojars" "https://clojars.org/repo"}))
+;...add-dependencies returns full dependency graph here...
+user=> (require '[incanter core stats charts])
+nil
+----
+
+Now you can analyze and chart away, Incanter having been added to your runtime.
+Note that `add-dependencies` may crunch along for a while — it may need to download dependencies, so you're waiting on the network.
+
+All resolved dependencies are stored in the default local maven repository (`~/.m2/repository`).
+A dependency is only downloaded if it does not already exist in the local repository.
+
+The arguments to `add-dependencies` look like Leiningen-style notation, and they are.
+
+[TIP]
+====
+**There are a number of scenarios in which `add-dependencies` will not work, or will not work as you'd expect**.
+Many of these are due to the nature of JVM classloaders (e.g. adding jars containing conflicting versions of a particular dependency will rarely end well), which Pomegranate does not currently attempt to hide.
+Thus, `add-classpath` and `add-dependencies` should be considered escape hatches to be used when necessary, rather than a regular part of your development workflow.
+====
+
+=== Modifying the Classpath and JDK 9+
+When Pomegranate was created, the JDK was amenable to inspecting and modifying class loaders.
+This changed starting with JDK version 9.
+Reflection API restrictions, modules, and encapsulation have given us less wiggle room.
+
+Pomegranate `1.0.0` adapted to the new reality by no longer attempting to modify `java.net.URLClassLoader` instances via reflection. 
+
+Pomegranate now leans on the modifiability of `clojure.lang.DynamicClassLoader`.
+As long as this classloader is available, we can modify the classpath. 
+
+If you find yourself in a situation where you want to use Pomegranate but have no dynamic classloader available, you might consider:
+
+* creating your own modifiable classloader, per the https://github.com/tobias/dynapath#note-on-urlclassloader[dynapath README], https://github.com/boot-clj/boot/commit/a046a497a8bb7f3d1e7aa8d4db4a81c51beaef7d[like boot did].
+* ensuring Clojure's dynamic classloader available like https://github.com/lambdaisland/kaocha/blob/7fb8134ecc2f282300c797efe83cd9fd105eb8b4/src/kaocha/classpath.clj#L11-L24[like kaocha did].
+
+=== The Aether API
+
+Here we go over some simple example usages to get your feet wet.
+Please consult the API docs, they describe all available options.
+
+==== Dependency Resolution
+
+We'll do some setup in our REPL first:
+
+[source,clojure]
+----
+(require '[cemerick.pomegranate.aether :as aether])
+
+;; by default Pomegranate consults maven central, let's include clojars:
+(alter-var-root #'aether/maven-central assoc "clojars" "https://repo.clojars.org")
+;; => {"central" "https://repo1.maven.org/maven2/", "clojars" "https://repo.clojars.org"}
+----
+
+Let's try resolving an artifact:
+
+[source,clojure]
+----
+(aether/resolve-artifacts :coordinates '[[metosin/malli "0.10.0"]])
+;; => ([metosin/malli "0.10.0"])
+----
+
+Ok not too exiting maybe, but now resolve dependencies for that artifact:
+
+[source,clojure]
+----
+(aether/resolve-dependencies :coordinates '[[metosin/malli "0.10.0"]])
+;; => {[org.clojure/clojure "1.8.0"] nil,
+;;     [org.clojure/test.check "1.1.1"] nil,
+;;     [org.clojure/core.rrb-vector "0.1.2"] nil,
+;;     [fipp "0.6.26"] #{[org.clojure/clojure "1.8.0"] [org.clojure/core.rrb-vector "0.1.2"]},
+;;     [borkdude/edamame "1.0.0"] #{[org.clojure/tools.reader "1.3.4"]},
+;;     [metosin/malli "0.10.0"] #{[org.clojure/test.check "1.1.1"]
+;;                                [fipp "0.6.26"]
+;;                                [borkdude/edamame "1.0.0"]
+;;                                [borkdude/dynaload "0.3.5"]
+;;                                [mvxcvi/arrangement "2.0.0"]},
+;;     [org.clojure/tools.reader "1.3.4"] nil,
+;;     [borkdude/dynaload "0.3.5"] nil,
+;;     [mvxcvi/arrangement "2.0.0"] nil}
+----
+
+Interesting.
+Also note that there's some details hiding in metadata:
+
+[source,clojure]
+----
+(-> (aether/resolve-dependencies :coordinates '[[metosin/malli "0.10.0"]])
+    ffirst
+    ((juxt identity meta)))
+;; => [[org.clojure/clojure "1.8.0"]
+;;     {:dependency
+;;      #object[org.eclipse.aether.graph.Dependency 0x7e70e8a0 "org.clojure:clojure:jar:1.8.0 (compile)"],
+;;      :file
+;;      #object[java.io.File 0x501ed01a "/home/lee/.m2/repository/org/clojure/clojure/1.8.0/clojure-1.8.0.jar"]}]
+----
+
+We can conveniently get to the `:file` info like so:
+
+[source,clojure]
+----
+(->> (aether/resolve-dependencies :coordinates '[[metosin/malli "0.10.0"]])
+     aether/dependency-files
+     (map str))
+;; => ("/home/lee/.m2/repository/org/clojure/clojure/1.8.0/clojure-1.8.0.jar"
+;;     "/home/lee/.m2/repository/org/clojure/test.check/1.1.1/test.check-1.1.1.jar"
+;;     "/home/lee/.m2/repository/org/clojure/core.rrb-vector/0.1.2/core.rrb-vector-0.1.2.jar"
+;;     "/home/lee/.m2/repository/fipp/fipp/0.6.26/fipp-0.6.26.jar"
+;;     "/home/lee/.m2/repository/borkdude/edamame/1.0.0/edamame-1.0.0.jar"
+;;     "/home/lee/.m2/repository/metosin/malli/0.10.0/malli-0.10.0.jar"
+;;     "/home/lee/.m2/repository/org/clojure/tools.reader/1.3.4/tools.reader-1.3.4.jar"
+;;     "/home/lee/.m2/repository/borkdude/dynaload/0.3.5/dynaload-0.3.5.jar"
+;;     "/home/lee/.m2/repository/mvxcvi/arrangement/2.0.0/arrangement-2.0.0.jar")
+----
+
+Let's have Pomegranate express dependencies for malli using malli as the root dependency:
+
+[source,clojure]
+----
+(->> (aether/resolve-dependencies :coordinates '[[metosin/malli "0.10.0"]])
+     (aether/dependency-hierarchy '[[metosin/malli "0.10.0"]]))
+;; => {[metosin/malli "0.10.0"]
+;;     {[borkdude/dynaload "0.3.5"] nil,
+;;      [borkdude/edamame "1.0.0"] {[org.clojure/tools.reader "1.3.4"] nil},
+;;      [fipp "0.6.26"] {[org.clojure/clojure "1.8.0"] nil,
+;;                       [org.clojure/core.rrb-vector "0.1.2"] nil},
+;;      [mvxcvi/arrangement "2.0.0"] nil,
+;;      [org.clojure/test.check "1.1.1"] nil}}
+----
+
+Cool!
+
+==== Supporting other Protocols via Wagons
+
+Out of the box, Pomegranate can communicate with maven repositories over HTTPS.
+
+If you need to hit a maven repository that speaks some other protocol, you can do so via https://maven.apache.org/wagon/[Maven Wagon].
+
+For example, by default, for security reasons, Pomegranate no longer has plain old unsecure HTTP support built available. 
+But, if you understand the risks (don't do this if you don't), and want to re-enable this support, you can do so by registering an HTTP wagon like so:
+
+[source,clojure]
+----
+(aether/register-wagon-factory! "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
+----
+
+And now you can hit your unsecure HTTP maven repo too. 
+Maybe you are running a local instance for caching.
+
+[source,clojure]
+----
+(aether/resolve-artifacts :coordinates '[[metosin/malli "0.10.0"]]
+                          :repositories {"local-nexus" "http://localhost:8081/repository/maven-public"})
+----
+
+==== Deploying Artifacts
+
+TIP: If you want a tool that does this well that uses the Pomegranate to do so, consider using https://github.com/slipset/deps-deploy[deps-deploy].
+
+===== To Local Maven Repo
+Assuming `pom.xml` and `target/some-library.jar` files, exist:
+
+[source,clojure]
+----
+(aether/install :coordinates '[lread/mucking-around "1.2.3"]
+                :jar-file (io/file "target" "some-library.jar")
+                :pom-file (io/file "pom.xml"))
+----
+
+After this completes, you'll see something like:
+[source,shell]
+----
+$ tree ~/.m2/repository/lread/mucking-around                
+/home/lee/.m2/repository/lread/mucking-around
+├── 1.2.3
+│   ├── mucking-around-1.2.3.jar
+│   ├── mucking-around-1.2.3.pom
+│   └── _remote.repositories
+└── maven-metadata-local.xml
+
+1 directory, 4 files
+----
+
+===== To Remote Maven Repo
+
+Assuming `pom.xml` and `target/some-library.jar`, exist, a deploy to clojars could look something like this:
+
+[source,clojure]
+----
+(aether/deploy :coordinates '[lread/mucking-around "1.2.3"]
+               :jar-file (io/file "target" "some-library.jar")
+               :pom-file (io/file "pom.xml")
+               :repository {:url "https://repo.clojars.org"
+                            :username (System/getEnv "CLOJARS_USERNAME")
+                            :password (System/getEnv "CLOJARS_PASSWORD")})
+----

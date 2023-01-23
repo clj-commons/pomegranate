@@ -3,7 +3,7 @@
 :toc:
 
 == Audience
-You want contribute to, or learn about, the development of the pomegranate library.
+You want contribute to, or learn about, the development of the Pomegranate library.
 
 == Contributing
 
@@ -32,19 +32,19 @@ JDK8+
 
 === Foundational Library
 
-Leiningen and other tools rely on pomegranate behaving the way it does.
+Leiningen and other tools rely on Pomegranate behaving the way it does.
 We must be very careful when making changes.
 
 == Docs
 
-All documentation is written in AsciiDoc. (coming soon)
+All documentation is written in AsciiDoc.
 @lread likes to follow https://asciidoctor.org/docs/asciidoc-recommended-practices/#one-sentence-per-line[AsciiDoc best practice of one sentence per line] but won't be entirely pedantic about that.
 
-We host our docs on cljdoc. (coming soon)
+We host our docs on cljdoc.
 
 == The Public API
 
-When making changes to pomegranate understand that any public method is considered part of the public API.
+When making changes to Pomegranate, understand that currently any public method is considered part of the public API.
 
 We must be careful not to expose what we feel are implementation details.
 
@@ -72,11 +72,11 @@ Run all Clojure tests
 $ bb test
 ----
 
-You can also include cognitect test runner options:
+You can also include Cognitect test runner options:
 
 [source,shell]
 ----
-$ bb test --var 'clj-yaml.core-test/emoji-can-be-parsed'
+$ bb test --var cemerick.pomegranate.aether-test/live-resolution
 ----
 
 ...and/or Clojure version:
@@ -95,4 +95,4 @@ $ bb lint-kondo
 $ bb lint-eastwood
 ----
 
-Or to run both: `bb lint`
+To run both: `bb lint`

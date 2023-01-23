@@ -1,0 +1,49 @@
+= Pomegranate
+:project-coords: clj-commons/pomegranate
+
+A sane Clojure API for Maven Artifact Resolver + dynamic runtime modification of the classpath.
+
+//Badges
+https://clojars.org/{project-coords}[image:https://img.shields.io/clojars/v/{project-coords}.svg[Clojars Project]] 
+https://github.com/{project-coords}/actions/workflows/tests.yml[image:https://github.com/{project-coords}/actions/workflows/tests.yml/badge.svg[CI tests]]
+https://github.com/{project-coords}/actions/workflows/nvd_scanner.yml[image:https://github.com/{project-coords}/actions/workflows/nvd_scanner.yml/badge.svg[Vulnerability Scan]]
+https://clojurians.slack.com/archives/C04KJME1UPL[image:https://img.shields.io/badge/slack-join_chat-brightgreen.svg[Slack chat]]
+
+== Documentation
+
+* link:doc/01-user-guide.adoc[User Guide]
+* link:CHANGELOG.adoc[Changelog]
+* link:doc/02-developer-guide.adoc[Developer Guide]
+* link:doc/03-maintainer-guide.adoc[Maintainer Guide]
+
+== Used In...
+
+Some projects that use Pomegranate are:
+
+* https://leiningen.org/[Leiningen] - For automating Clojure projects without setting your hair on fire
+* https://github.com/slipset/deps-deploy[deps-deploy] - Deploy your stuff
+* https://github.com/seancorfield/clj-new[clj-new] -  Generate new projects based on clj, Boot, or Leiningen Templates!
+* https://github.com/benedekfazekas/mranderson[MrAnderson] - Dependency inlining and shadowing 
+* https://github.com/clojure-emacs/enrich-classpath[enrich-classpath] - Enriches Lein/deps.edn dependency trees with Java sources, JDK sources, javadocs, etc 
+* https://github.com/pink-gorilla/nrepl-middleware[nrepl-middleware] - Websocket relay, Eval sniffing, core.async client, notebook rendering
+* https://github.com/jsa-aerial/saite[saite] - Interactive document creation for exploratory graphics and visualizations.
+
+Are you using Pomegranate? Let us know and we'll add your project here!
+
+== People
+
+=== Contributors
+A huge thank you to https://github.com/clj-commons/pomegranate/graphs/contributors[all the people who have contributed directly to Pomegranate]!
+
+=== Founders
+
+* https://github.com/cemerick[@cemerick] - the creator of Pomegranate
+
+=== Current Active Maintainers
+
+* https://github.com/lread[@lread]
+
+== License
+
+Copyright © 2011-2017 https://cemerick.com[Chas Emerick] and all other contributors. +
+Licensed under the EPL, see link:epl-v10.html[epl-v10.html] for details.
