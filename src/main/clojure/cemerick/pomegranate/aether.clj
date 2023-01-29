@@ -1,4 +1,5 @@
 (ns cemerick.pomegranate.aether
+  "An abstraction over the Maven Artifact Resolver."
   (:refer-clojure :exclude  [type proxy])
   (:require [clojure.java.io :as io]
             [clojure.set :as cset]
@@ -31,23 +32,22 @@
 (def ^{:private true} default-local-repo
   (io/file (System/getProperty "user.home") ".m2" "repository"))
 
-(def maven-central {"central" "https://repo1.maven.org/maven2/"})
+(def maven-central
+  "Although we call this var `maven-central`, it is used as a map of default maven repositories for resolution."
+  {"central" "https://repo1.maven.org/maven2/"} )
 
-;; Using HttpWagon (which uses apache httpclient) because the "LightweightHttpWagon"
-;; (which just uses JDK HTTP) reliably flakes if you attempt to resolve SNAPSHOT
-;; artifacts from an HTTPS password-protected repository (like a nexus instance)
-;; when other un-authenticated repositories are included in the resolution.
-;; My theory is that the JDK HTTP impl is screwing up connection pooling or something,
-;; and reusing the same connection handle for the HTTPS repo as it used for e.g.
-;; central, without updating the authentication info.
-;; In any case, HttpWagon is what Maven 3 uses, and it works.
 (def ^{:private true} wagon-factories
+  ;; there were issues with the HTTP lightweight Wagon (now deprecated by Maven),
+  ;; so we match the Maven tool itself and use HttpWagon.
   (atom {"https" #(org.apache.maven.wagon.providers.http.HttpWagon.)
          "http" #(throw (Exception. "Tried to use insecure HTTP repository."))}))
 
 (defn register-wagon-factory!
-  "Registers a new no-arg factory function for the given scheme.  The function
-   must return an implementation of org.apache.maven.wagon.Wagon."
+  "⚙️  This is considered a lower level function.
+   It allows you to add communication channels to talk to maven repositories that aren't over the included https channel.
+
+   Registers a no-arg `factory-fn` function for the given `scheme`. The `factory-fn`
+   must return an implementation of `org.apache.maven.wagon.Wagon`."
   [scheme factory-fn]
   (swap! wagon-factories (fn [m]
                            (when-let [fn (and (not= scheme "http") (m scheme))]
@@ -92,7 +92,7 @@
                 :transfer-start-time (.getTransferStartTime r)
                 :trace (.getTrace r)})})
 
-(defn- default-listener-fn
+(defn- stdout-listener-fn
   [{:keys [type method _transferred resource error] :as _evt}]
   (let [{:keys [name size repository _transfer-start-time]} resource]
     (case type
@@ -128,7 +128,7 @@
     (instance? TransferListener transfer-listener) transfer-listener
 
     (= transfer-listener :stdout)
-    (TransferListenerProxy. (comp default-listener-fn transfer-event))
+    (TransferListenerProxy. (comp stdout-listener-fn transfer-event))
 
     (fn? transfer-listener)
     (TransferListenerProxy. (comp transfer-listener transfer-event))
@@ -138,11 +138,11 @@
 (defn- generate-checksums-by-default
   "Return repository `session` configured with pomegranate checksum defaults.
 
-  By default, maven resolver does not generate checksums for .asc files, but pomegranate prefers to do so.
+   By default, maven resolver does not generate checksums for .asc files, but pomegranate prefers to do so.
 
-  We automatically upconvert the legacy (and removed) `aether.checksums.forSignature`
-  to its replacement `aether.checksums.omitChecksumsForExtensions`.
-  If both options are specified `aether.checksums.omitChecksumsForExtensions` takes precedence."
+   We automatically upconvert the legacy (and removed) `aether.checksums.forSignature`
+   to its replacement `aether.checksums.omitChecksumsForExtensions`.
+   If both options are specified `aether.checksums.omitChecksumsForExtensions` takes precedence."
   [^DefaultRepositorySystemSession session]
   (let [config (.getConfigProperties session)
         option "aether.checksums.omitChecksumsForExtensions"
@@ -156,6 +156,15 @@
       session)))
 
 (defn repository-session
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+
+   Returns a repository session created from options map.
+
+   Typically used when overriding via `:repository-session-fn` option available
+   in various aether fns. In this usage, your `:repository-session-fn` will typically
+   pass through the options map to `repository-session` but then will tweak the
+   returned session to your specific needs."
   [{:keys [repository-system local-repo offline? transfer-listener mirror-selector]}]
   (let [session (org.apache.maven.repository.internal.MavenRepositorySystemUtils/newSession)
         session (doto session
@@ -218,7 +227,23 @@
     repo-builder))
 
 (defn make-repository
-  "Produces an Aether RemoteRepository instance from Pomegranate-style repository information"
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+
+   Returns an `org.eclipse.aether.repository.RemoteRepository` instance for repository `id` with `settings` using `proxy`
+
+   - `id` - name of maven repository
+   - `settings` - is either a string representing the URL of the repository or an options map:
+      - `:url` - string URL of the repository
+      - `:snapshots` (optional, default `true`) - use snapshots versions?
+      - `:releases` (optional, default `true`) - use release versions?
+      - `:username` (as required by repository) - login username for repository
+      - `:password` (as required by repository) - login password for repository
+      - `:passphrase` (as required by repository) - login passphrase for repository
+      - `:private-key-file` - (as required by repository) login private key file for repository
+      - `:update` - (optional) `:daily` (default) | `:always` | `:never`
+      - `:checksum` - (optional) `:fail` (default) | `:ignore` | `:warn`
+   - `proxy` - same as `:proxy` for [[deploy]]"
   ^org.eclipse.aether.repository.RemoteRepository
   [[id settings] proxy]
   (let [settings-map (if (string? settings)
@@ -235,7 +260,6 @@
 (defn- group
   [group-artifact]
   (or (namespace group-artifact) (name group-artifact)))
-
 
 (defn- coordinate-string
   "Produces a coordinate string with a format of
@@ -265,7 +289,10 @@
   (DefaultArtifact. (coordinate-string dep-spec)))
 
 (defn dependency
-  "Produces an Aether Dependency instance from Pomegranate-style dependency information"
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+
+   Returns an `org.eclipse.aether.graph.Dependency` instance converted from a lein-style dependency vector."
   [[_group-artifact _version & {:keys [scope optional exclusions]
                                 :as _opts
                                 :or {scope "compile"
@@ -327,37 +354,24 @@
     (throw (IllegalArgumentException. (str "No file provided for artifact " artifact)))))
 
 (defn deploy-artifacts
-  "Deploy the artifacts kwarg to the repository kwarg.
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+   Consider instead: [[deploy]].
 
-  :files - map from artifact vectors to file paths or java.io.File objects
-           where the file to be deployed for each artifact is to be found
-           An artifact vector is e.g.
-             '[group/artifact \"1.0.0\"] or
-             '[group/artifact \"1.0.0\" :extension \"pom\"].
-           All artifacts should have the same version and group and artifact IDs
-  :repository - {name url} | {name settings}
-    settings:
-      :url - URL of the repository
-      :snapshots - use snapshots versions? (default true)
-      :releases - use release versions? (default true)
-      :username - username to log in with
-      :password - password to log in with
-      :passphrase - passphrase to log in wth
-      :private-key-file - private key file to log in with
-      :update - :daily (default) | :always | :never
-      :checksum - :fail (default) | :ignore | :warn
-  :local-repo - path to the local repository (defaults to ~/.m2/repository)
-  :transfer-listener - same as provided to resolve-dependencies
+   Deploy artifact `:files` to `:repository`.
 
-  :proxy - proxy configuration, can be nil, the host scheme and type must match
-    :host - proxy hostname
-    :type - http  (default) | http | https
-    :port - proxy port
-    :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
-    :username - username to log in with, may be null
-    :password - password to log in with, may be null
-    :passphrase - passphrase to log in wth, may be null
-    :private-key-file - private key file to log in with, may be null"
+   kwarg options:
+   - `:files` - describes files to be deployed.
+      Map key is artifact vector coordinate and value is associated `java.io.File` file.
+      All artifacts should have the same version, group and artifact IDs.
+      Examples of artifact vectors keys:
+      - `'[group/artifact \"1.0.0\"]` or
+      - `'[group/artifact \"1.0.0\" :extension \"pom\"]`
+   - `:repository` - same as [[deploy]]
+   - `:local-repo` - (optional, default `~/.m2/repository`) - `java.io.File` path to the local repository
+   - `:transfer-listener` - same as [[deploy]]
+   - `:proxy` - same as [[deploy]]
+   - `:repository-session-fn` - (optional, defaults to [[repository-session]])"
 
   [& {:keys [files repository local-repo transfer-listener proxy repository-session-fn]}]
   (when (empty? files)
@@ -382,11 +396,18 @@
                (.setRepository (first (map #(make-repository % proxy) repository)))))))
 
 (defn install-artifacts
-  "Deploy the file kwarg using the coordinates kwarg to the repository kwarg.
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+   Consider instead: [[install]].
 
-  :files - same as with deploy-artifacts
-  :local-repo - path to the local repository (defaults to ~/.m2/repository)
-  :transfer-listener - same as provided to resolve-dependencies"
+   Deploy the `:files` arg using the coordinates kwarg to the repository kwarg.
+
+   kwarg options:
+   - `:files` - see [[deploy]]
+   - `:local-repo` - (optional, default `~/.m2/repository`) - `java.io.File` path to the local repository
+   - `:transfer-listener` - see [[deploy]]
+   - `:repository-session-fn` - (optional, defaults to [[repository-session]])"
+
   [& {:keys [files local-repo transfer-listener repository-session-fn]}]
   (let [system (repository-system)
         session ((or repository-session-fn
@@ -410,37 +431,62 @@
   (when path {artifact-coords path}))
 
 (defn deploy
-  "Deploy the jar-file kwarg using the pom-file kwarg and coordinates
-kwarg to the repository kwarg.
+  "Deploy `:jar-file` and `:pom-file` to `:coordinates` in maven `:repository`.
 
-  :coordinates - [group/name \"version\"]
-  :artifact-map - a map from partial coordinates to file path or File
-  :jar-file - a file pointing to the jar
-  :pom-file - a file pointing to the pom
-  :repository - {name url} | {name settings}
-    settings:
-      :url - URL of the repository
-      :snapshots - use snapshots versions? (default true)
-      :releases - use release versions? (default true)
-      :username - username to log in with
-      :password - password to log in with
-      :passphrase - passphrase to log in wth
-      :private-key-file - private key file to log in with
-      :update - :daily (default) | :always | :never
-      :checksum - :fail (default) | :ignore | :warn
+   For more control use `:artifact-map` in place of, or in addition to, `:jar-file` and `:pom-file`.
 
-  :local-repo - path to the local repository (defaults to ~/.m2/repository)
-  :transfer-listener - same as provided to resolve-dependencies
-
-  :proxy - proxy configuration, can be nil, the host scheme and type must match
-    :host - proxy hostname
-    :type - http  (default) | http | https
-    :port - proxy port
-    :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
-    :username - username to log in with, may be null
-    :password - password to log in with, may be null
-    :passphrase - passphrase to log in wth, may be null
-    :private-key-file - private key file to log in with, may be null"
+   kwarg options:
+   - `:coordinates` - lein-style `'[group/name \"version\"]`
+   - `:artifact-map` - (optional) describes artifacts to be deployed, see also `:jar-file` and `:pom-file`.
+      Map key is a partial artifact vector and value is associated `java.io.File` file.
+      Coordinates automatically populated from `:coordinates` and should not be respecified.
+      Examples of partial artifact vectors keys:
+      - `[]` - for a jar
+      - `[:extension \"pom\"]` - for a pom
+   - `:jar-file` - a `java.io.File` pointing to the jar
+   - `:pom-file` - a `java.io.File` pointing to the pom
+   - `:repository` - single entry map of `name` to either
+     - `url` string
+     - `settings` map of
+        - `:url` - string URL of the repository
+        - `:snapshots` (optional, default `true`) - use snapshots versions?
+        - `:releases` (optional, default `true`) - use release versions?
+        - `:username` (as required by repository) - login username for repository
+        - `:password` (as required by repository) - login password for repository
+        - `:passphrase` (as required by repository) - login passphrase for repository
+        - `:private-key-file` - (as required by repository) login private key file for repository
+        - `:update` - (optional) `:daily` (default) | `:always` | `:never`
+        - `:checksum` - (optional) `:fail` (default) | `:ignore` | `:warn`
+   - `:local-repo` - (optional, default `~/.m2/repository`) - `java.io.File` path to the local repository
+   - `:transfer-listener` - (optional, default no listener), can be:
+      - `:stdout`, writes notifications and progress indicators to stdout, suitable for an
+         interactive console program
+      - a function of one argument, which will be called with a map derived from
+        each event:
+        - `:type` - `:initiated`, `:started`, `:progressed`, `:corrupted`, `:succeeded`, or `:failed`
+        - `:method` - `:get` or `:put`
+        - `:transferred` - number of bytes transferred
+        - `:error` - the `Exception` that occured, if any, during the transfer
+        - `:data-buffer` - the `java.nio.ByteBuffer` holding the transferred bytes since the last event
+        - `:data-length` - the number of bytes transferred since the last event
+        - `:resource` - a map of:
+           - `:repository` - string URL of the repository
+           - `:name` - string path of the resource relative to the repository's base url
+           - `:file` - the local `File` being uploaded or downloaded
+           - `:size` - the size of the resource
+           - `:transfer-start-time` - long epoch
+           - `:trace` - `org.eclipse.aether.RequestTrace` instance
+     - an instance of `org.eclipse.aether.transfer.TransferListener`
+   - `:proxy` - (optional, default no proxy) the `:host` scheme and `:type` must match
+     - `:host` - proxy hostname
+     - `:type` - (optional, default `\"http\"`) | `\"https\"`
+     - `:port` - proxy port
+     - `:non-proxy-hosts` - (optional) The list of hosts to exclude from proxying
+     - `:username` - (optional) login username
+     - `:password` - (optional) login password
+     - `:passphrase` - (optional) login passphrase
+     - `:private-key-file` - (optional) login private key file
+   - `:repository-session-fn` - (optional, defaults to [[repository-session]])"
   [& {:keys [coordinates artifact-map jar-file pom-file] :as opts}]
   (when (empty? coordinates)
     (throw
@@ -455,15 +501,17 @@ kwarg to the repository kwarg.
                              (optional-artifact [] jar-file)))))))
 
 (defn install
-  "Install the artifacts specified by the jar-file or file-map and pom-file
-   kwargs using the coordinates kwarg.
+  "Install `:jar-file` and `:pom-file` to `:coordinates` in `:local-repo`.
 
-  :coordinates - [group/name \"version\"]
-  :artifact-map - a map from partial coordinates to file path or File
-  :jar-file - a file pointing to the jar
-  :pom-file - a file pointing to the pom
-  :local-repo - path to the local repository (defaults to ~/.m2/repository)
-  :transfer-listener - same as provided to resolve-dependencies"
+   For more control use `:artifact-map` in place of, or in addition to, `:jar-file` and `:pom-file`.
+
+   kwarg options:
+   - `:coordinates` - lein-style `'[group/name \"version\"]`
+   - `:artifact-map` - same as [[deploy]]
+   - `:jar-file` - a `java.io.File` pointing to the jar
+   - `:pom-file` - a `java.io.File` pointing to the pom
+   - `:local-repo` - (optional, default `~/.m2/repository`) - `java.io.File` path to the local repository
+   - `:transfer-listener` - same as [[deploy]]"
   [& {:keys [coordinates artifact-map jar-file pom-file] :as opts}]
   (when (empty? coordinates)
     (throw
@@ -537,80 +585,21 @@ kwarg to the repository kwarg.
               (.setContentType (or content-type "default"))
               (.build)))))))
 
-
 (defn resolve-artifacts*
-  "Resolves artifacts for the coordinates kwarg, using repositories from the
-   `:repositories` kwarg.
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+   Consider instead: [[resolve-artifacts]].
 
-   Retrieval of dependencies can be disabled by providing `:retrieve false` as a
-   kwarg.
+   Resolves artifacts for `:coordinates` from `:repositories`.
 
-   Returns an sequence of either `org.eclipse.aether.VersionResult`
-   if `:retrieve false`, or `org.eclipse.aether.ArtifactResult` if
-   `:retrieve true` (the default).
+   Returns an sequence of either :
+   - `org.eclipse.aether.ArtifactResult` when `:retrieve true` (the default)
+   - `org.eclipse.aether.VersionResult` when `:retrieve false`
 
    If you don't want to mess with the Aether implementation classes, then use
-   `resolve-artifacts` instead.
+   [[resolve-artifacts]] instead.
 
-    :coordinates - [[group/name \"version\" & settings] ..]
-      settings:
-      :extension  - the maven extension (type) to require
-      :classifier - the maven classifier to require
-      :scope      - the maven scope for the dependency (default \"compile\")
-      :optional   - is the dependency optional? (default \"false\")
-      :exclusions - which sub-dependencies to skip : [group/name & settings]
-        settings:
-        :classifier (default \"*\")
-        :extension  (default \"*\")
-
-    :repositories - {name url ..} | {name settings ..}
-      (defaults to {\"central\" \"https://repo1.maven.org/maven2/\"}
-      settings:
-      :url - URL of the repository
-      :snapshots - use snapshots versions? (default true)
-      :releases - use release versions? (default true)
-      :username - username to log in with
-      :password - password to log in with
-      :passphrase - passphrase to log in wth
-      :private-key-file - private key file to log in with
-      :update - :daily (default) | :always | :never
-      :checksum - :fail (default) | :ignore | :warn
-
-    :local-repo - path to the local repository (defaults to ~/.m2/repository)
-    :offline? - if true, no remote repositories will be contacted
-    :transfer-listener - the transfer listener that will be notifed of dependency
-      resolution and deployment events.
-      Can be:
-        - nil (the default), i.e. no notification of events
-        - :stdout, corresponding to a default listener implementation that writes
-            notifications and progress indicators to stdout, suitable for an
-            interactive console program
-        - a function of one argument, which will be called with a map derived from
-            each event.
-        - an instance of org.eclipse.aether.transfer.TransferListener
-
-    :proxy - proxy configuration, can be nil, the host scheme and type must match
-      :host - proxy hostname
-      :type - http  (default) | http | https
-      :port - proxy port
-      :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
-      :username - username to log in with, may be null
-      :password - password to log in with, may be null
-      :passphrase - passphrase to log in wth, may be null
-      :private-key-file - private key file to log in with, may be null
-
-    :mirrors - {matches settings ..}
-      matches - a string or regex that will be used to match the mirror to
-                candidate repositories. Attempts will be made to match the
-                string/regex to repository names and URLs, with exact string
-                matches preferred. Wildcard mirrors can be specified with
-                a match-all regex such as #\".+\".  Excluding a repository
-                from mirroring can be done by mapping a string or regex matching
-                the repository in question to nil.
-      settings include these keys, and all those supported by :repositories:
-      :name         - name/id of the mirror
-      :repo-manager - whether the mirror is a repository manager"
-
+   See [[resolve-artifacts]] for kwarg options."
   [& {:keys [repositories coordinates files retrieve local-repo
              transfer-listener offline? proxy mirrors repository-session-fn]
       :or {retrieve true}}]
@@ -651,9 +640,54 @@ kwarg to the repository kwarg.
           ^RepositorySystem system session (VersionRequest. dep repositories nil)))))))
 
 (defn resolve-artifacts
-  "Same as `resolve-artifacts*`, but returns a sequence of dependencies; each
-   artifact's metadata contains the source Aether result object, and the
-   artifact's :file on disk."
+  "Resolves artifacts for `:coordinates` in `:repositories`.
+
+   Same as [[resolve-artifacts*]], but returns a sequence of lein-style dependency vectors; each
+   adorned with metadata:
+   - `:dependency` - the Aether dependency object
+   - `:file` - the artifact's `java.io.File` on disk.
+
+   kwarg options:
+    - `:coordinates` - lein-style `'[[group/name \"version\" & settings] ..]`
+      where settings is kwargs of:
+      - `:extension` - (optional) - the maven extension type to require, for example: `\"pom\"`
+      - `:classifier` - (optional) - the maven classifier to require, for example: `\"sources\"`
+      - `:scope` - (optional, default `\"compile\"`) - the maven scope for the dependency
+      - `:optional`   - (optional, default `false`) - is the dependency optional?
+      - `:exclusions` - (optional) which sub-dependencies to skip : lein-style `[group/name & settings]`
+         where settings is kwargs of:
+         - `:classifier` (optional, default `\"*\"`)
+         - `:extension`  (optional, default `\"*\"`)
+   - `:repositories`- (optional, default `{\"central\" \"https://repo1.maven.org/maven2/\"}`)
+      map of `name` to either
+      - `url` string
+      - `settings` map of
+        - `:url` - string URL of the repository
+        - `:snapshots` (optional, default `true`) - use snapshots versions?
+        - `:releases` (optional, defalt `true`) - use release versions?
+        - `:username` (as required by repository) - login username for repository
+        - `:password` (as required by repository) - login password for repository
+        - `:passphrase` (as required by repository) - login passphrase for repository
+        - `:private-key-file` - (as required by repository) login private key file for repository
+        - `:update` - (optional) `:daily` (default) | `:always` | `:never`
+        - `:checksum` - (optional) `:fail` (default) | `:ignore` | `:warn`
+   - `:retrieve` - (optional, default `true`) - specify `false` to disable downloading of dependencies
+   - `:local-repo` - (optional, default `~/.m2/repository`) - `java.io.File` path to the local repository
+   - `:offline?` - if `true`, no remote repositories will be contacted
+   - `:transfer-listener` - same as [[deploy]]
+   - `:proxy` - same as [[deploy]]
+   - `:mirrors` - map of `match` to `settings` where:
+      - `match` is a string or regex that will be used to match the mirror to
+         candidate repositories. Attempts will be made to match the
+         string/regex to repository names and URLs, with exact string
+         matches preferred. Wildcard mirrors can be specified with
+         a match-all regex such as `#\".+\"`.  Excluding a repository
+         from mirroring can be done by mapping a string or regex matching
+         the repository in question to nil.
+      - `settings` includes the following keys, and all those supported by `:repositories` `:settings`.
+        - `:name` - name/id of the mirror
+        - `:repo-manager` - whether the mirror is a repository manager
+   - `:repository-session-fn` - (optional, defaults to [[repository-session]])"
   [& args]
   (let [{:keys [coordinates]} (apply hash-map args)]
     (->> (apply resolve-artifacts* args)
@@ -707,10 +741,13 @@ kwarg to the repository kwarg.
     coord))
 
 (defn merge-versions-from-managed-coords
-  "Given a vector of coordinates (e.g. [[group/name <\"version\"> & settings] ..])
-  where the version field is optional or can be nil, and a vector of managed coordinates,
-  returns an updated vector of coordinates with version numbers merged in from the
-  managed-coordinates vector as necessary."
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+
+   Returns `coordinates` with any `nil` or missing versions merged in from
+   `managed-coordinates`.
+
+   Coordinates are lein-style, e.g. `'[[group/name \"version\" & settings] ..]`"
   [coordinates managed-coordinates]
   (vec (map (partial add-version-from-managed-coords-if-missing managed-coordinates)
             coordinates)))
@@ -729,77 +766,20 @@ kwarg to the repository kwarg.
        vec))
 
 (defn resolve-dependencies*
-  "Collects dependencies for the coordinates kwarg, using repositories from the
-   `:repositories` kwarg.
-   Retrieval of dependencies can be disabled by providing `:retrieve false` as a kwarg.
-   Returns an instance of either `org.eclipse.aether.collection.CollectResult` if
-   `:retrieve false` or `org.eclipse.aether.resolution.DependencyResult` if
-   `:retrieve true` (the default).  If you don't want to mess with the Aether
-   implementation classes, then use `resolve-dependencies` instead.
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+   Consider instead: [[resolve-dependencies]].
 
-    :coordinates - [[group/name <\"version\"> & settings] ..]
-      settings:
-      :extension  - the maven extension (type) to require
-      :classifier - the maven classifier to require
-      :scope      - the maven scope for the dependency (default \"compile\")
-      :optional   - is the dependency optional? (default \"false\")
-      :exclusions - which sub-dependencies to skip : [group/name & settings]
-        settings:
-        :classifier (default \"*\")
-        :extension  (default \"*\")
+   Returns a graph of dependencies for `:coordinates` in `:repositories`.
 
-    :managed-coordinates - [[group/name \"version\"] ..]
-      Used to determine version numbers for any entries in `:coordinates` that
-      don't explicitly specify them.
+   Returns an instance of either:
+   - `org.eclipse.aether.resolution.DependencyResult` if `:retrieve true` (the default)
+   - `org.eclipse.aether.collection.CollectResult` if `:retrieve false`
 
-    :repositories - {name url ..} | {name settings ..}
-      (defaults to {\"central\" \"https://repo1.maven.org/maven2/\"}
-      settings:
-      :url - URL of the repository
-      :snapshots - use snapshots versions? (default true)
-      :releases - use release versions? (default true)
-      :username - username to log in with
-      :password - password to log in with
-      :passphrase - passphrase to log in wth
-      :private-key-file - private key file to log in with
-      :update - :daily (default) | :always | :never
-      :checksum - :fail (default) | :ignore | :warn
+   If you don't want to mess with the Aether implementation classes, then use
+   [[resolve-dependencies]] instead.
 
-    :local-repo - path to the local repository (defaults to ~/.m2/repository)
-    :offline? - if true, no remote repositories will be contacted
-    :transfer-listener - the transfer listener that will be notifed of dependency
-      resolution and deployment events.
-      Can be:
-        - nil (the default), i.e. no notification of events
-        - :stdout, corresponding to a default listener implementation that writes
-            notifications and progress indicators to stdout, suitable for an
-            interactive console program
-        - a function of one argument, which will be called with a map derived from
-            each event.
-        - an instance of org.eclipse.aether.transfer.TransferListener
-
-    :proxy - proxy configuration, can be nil, the host scheme and type must match
-      :host - proxy hostname
-      :type - http  (default) | http | https
-      :port - proxy port
-      :non-proxy-hosts - The list of hosts to exclude from proxying, may be null
-      :username - username to log in with, may be null
-      :password - password to log in with, may be null
-      :passphrase - passphrase to log in wth, may be null
-      :private-key-file - private key file to log in with, may be null
-
-    :mirrors - {matches settings ..}
-      matches - a string or regex that will be used to match the mirror to
-                candidate repositories. Attempts will be made to match the
-                string/regex to repository names and URLs, with exact string
-                matches preferred. Wildcard mirrors can be specified with
-                a match-all regex such as #\".+\".  Excluding a repository
-                from mirroring can be done by mapping a string or regex matching
-                the repository in question to nil.
-      settings include these keys, and all those supported by :repositories:
-      :name         - name/id of the mirror
-      :repo-manager - whether the mirror is a repository manager"
-
+   See [[resolve-dependencies]] for kwarg options."
   [& {:keys [repositories coordinates managed-coordinates files retrieve local-repo
              transfer-listener offline? proxy mirrors repository-session-fn]
       :or {retrieve true}}]
@@ -832,10 +812,26 @@ kwarg to the repository kwarg.
       (.collectDependencies ^RepositorySystem system session collect-request))))
 
 (defn resolve-dependencies
-  "Same as `resolve-dependencies*`, but returns a graph of dependencies; each
-   dependency's metadata contains the source Aether Dependency object, and
-   the dependency's :file on disk.  Please refer to `resolve-dependencies*` for details
-   on usage, or use it if you need access to Aether dependency resolution objects."
+  "Returns a graph of dependencies for `:coordinates` in `:repositories`.
+
+   Same as [[resolve-dependencies*]], but returns a graph of lein-style dependency vectors; each
+   adorned with metadata:
+   - `:dependency` - the Aether dependency object
+   - `:file` - the artifact's `java.io.File` on disk.
+
+   kwarg options:
+   - `:coordinates` - same as [[resolve-artifacts]]
+   - `:managed-coordinates` - (optional) lein-style `[['group/name \"version\"] ..]`
+      Used to determine version numbers for any entries in `:coordinates` that
+      don't explicitly specify them.
+   - `:repositories` -  same as [[resolve-artifacts]]
+   - `:retrieve` - (optional, default `true`) - specify `false` to disable downloading of dependencies
+   - `:local-repo` - (optional, default `~/.m2/repository`) - `java.io.File` path to the local repository
+   - `:offline?` - if `true`, no remote repositories will be contacted
+   - `:transfer-listener` - same as [[deploy]]
+   - `:proxy` - same as [[deploy]]
+   - `:mirrors` - same as [[resolve-artifacts]]
+   - `:repository-session-fn` - (optional, defaults to [[repository-session]])"
   [& args]
   (let [result (apply resolve-dependencies* args)]
     (if (instance? DependencyResult result)
@@ -847,8 +843,7 @@ kwarg to the repository kwarg.
           dependency-graph))))
 
 (defn dependency-files
-  "Given a dependency graph obtained from `resolve-dependencies`, returns a seq of
-   files from the dependencies' metadata."
+  "Returns a seq of `java.io.Files`s from dependency metadata in `graph` (as returned from [[resolve-dependencies]])"
   [graph]
   (->> graph keys (map (comp :file meta)) (remove nil?)))
 
@@ -875,8 +870,11 @@ kwarg to the repository kwarg.
     (empty? sexcs)))
 
 (defn within?
-  "Determines if the first coordinate would be a version in the second
-   coordinate. The first coordinate is not allowed to contain a
+  "⚙️  This is considered a lower level function, and used by other aether fns.
+   Use it if you need to, but there's a good chance you won't need to.
+
+   Returns `true` if the first coordinate `coord` is a version within the second
+   coordinate `scoord`. Only the second coordinate is allowed to contain a
    version range."
   [[_dep version & opts :as coord] [_sdep sversion & sopts :as scoord]]
   (let [om (apply hash-map opts)
@@ -897,9 +895,12 @@ kwarg to the repository kwarg.
                  (.containsVersion vc v)))))))
 
 (defn dependency-hierarchy
-  "Returns a dependency hierarchy based on the provided dependency graph
-   (as returned by `resolve-dependencies`) and the coordinates that should
-   be the root(s) of the hierarchy.  Siblings are sorted alphabetically."
+  "Returns a dependency hierarchy based on `dep-graph`
+   (as returned by [[resolve-dependencies]]) and `root-coordinates`.
+
+   `root-coordinates` should be the root(s) of the hierarchy.
+
+   Siblings are sorted alphabetically."
   [root-coordinates dep-graph]
   (let [root-specs (map (comp dep-spec dependency) root-coordinates)
         hierarchy (for [root (filter

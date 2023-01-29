@@ -305,6 +305,7 @@
   (let [repo-file (partial io/file "test-repo" "demo" "demo" "1.0.0")]
     (aether/deploy
      :coordinates '[group/artifact "1.0.0"]
+     ;;TODO was this first entry supposed be a jar file?
      :artifact-map {[] (repo-file "demo-1.0.0.pom")
                     [:extension "pom"] (repo-file "demo-1.0.0.pom")}
      :repository tmp-remote-repo
