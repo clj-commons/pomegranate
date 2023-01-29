@@ -85,7 +85,7 @@ $ bb test --var cemerick.pomegranate.aether-test/live-resolution
 ----
 $ bb test --clj-version 1.9
 ----
-(defaults to `1.8`, specify `:all` to test against all supported Clojure versions)
+(defaults to `1.4`, specify `:all` to test against all supported Clojure versions)
 
 Our CI workflow lints sources with clj-kondo, and eastwood - and you can too!
 
