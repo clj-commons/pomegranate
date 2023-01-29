@@ -16,7 +16,11 @@
         org.apache.httpcomponents/httpclient {:mvn/version "4.5.14"}
         org.apache.httpcomponents/httpcore {:mvn/version "4.4.16"}}
 
- :aliases {:1.8 {:override-deps {org.clojure/clojure {:mvn/version "1.8.0"}}}
+ :aliases {:1.4 {:override-deps {org.clojure/clojure {:mvn/version "1.4.0"}}}
+           :1.5 {:override-deps {org.clojure/clojure {:mvn/version "1.5.1"}}}
+           :1.6 {:override-deps {org.clojure/clojure {:mvn/version "1.6.0"}}}
+           :1.7 {:override-deps {org.clojure/clojure {:mvn/version "1.7.0"}}}
+           :1.8 {:override-deps {org.clojure/clojure {:mvn/version "1.8.0"}}}
            :1.9 {:override-deps {org.clojure/clojure {:mvn/version "1.9.0"}}}
            :1.10 {:override-deps {org.clojure/clojure {:mvn/version "1.10.3"}}}
            :1.11 {:override-deps {org.clojure/clojure {:mvn/version "1.11.1"}}}
@@ -25,6 +29,9 @@
                   :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
                                org.slf4j/slf4j-simple {:mvn/version "2.0.6"}}
                   :main-opts ["-m" "cognitect.test-runner" "-d" "src/test/clojure"]}
+           ;; compatible with Clojure < 1.8
+           :old-runner {:override-deps {io.github.cognitect-labs/test-runner
+                                        {:git/sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}
            :jar {:extra-deps  {seancorfield/depstar #_:clj-kondo/ignore {:mvn/version "RELEASE"}}
                  :main-opts ["-m" "hf.depstar.jar" "pomegranate.jar"]}
            :deploy {:extra-deps {slipset/deps-deploy {:git/url "https://github.com/slipset/deps-deploy.git"

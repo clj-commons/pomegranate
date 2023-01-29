@@ -17,7 +17,7 @@ A release with known breaking changes is marked with:
 ** Review and update docs and docstrings.
 (https://github.com/clj-commons/pomegranate/issues/149[#149])
 (https://github.com/lread[@lread])
-** Update automated testing to cover Linux, Windows, current JDKs, and Clojure v1.8+
+** Update automated testing to cover Linux, Windows, current JDKs, and Clojure v1.4+
 (https://github.com/clj-commons/pomegranate/issues/137[#137])
 (https://github.com/lread[@lread])
 ** Add automated check for vulnerabilities in dependencies
