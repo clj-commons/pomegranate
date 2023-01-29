@@ -31,6 +31,7 @@
                   :main-opts ["-m" "cognitect.test-runner" "-d" "src/test/clojure"]}
            ;; compatible with Clojure < 1.8
            :old-runner {:override-deps {io.github.cognitect-labs/test-runner
+                                        ^:antq/exclude
                                         {:git/sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}
            :jar {:extra-deps  {seancorfield/depstar #_:clj-kondo/ignore {:mvn/version "RELEASE"}}
                  :main-opts ["-m" "hf.depstar.jar" "pomegranate.jar"]}
