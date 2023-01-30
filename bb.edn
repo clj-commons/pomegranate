@@ -28,4 +28,14 @@
           :task (clojure "-M:test:eastwood")}
          lint
          {:doc "Run all lints"
-          :depends [lint-kondo lint-eastwood]} }}
+          :depends [lint-kondo lint-eastwood]}
+         nvd-scan
+         {:doc "Check for security vulnerabilities in dependencies"
+          :task (let [config (if (System/getenv "CI")
+                               "./github_actions_config.json" ;; to support CI caching
+                               "./local_config.json")]
+                  (status/line :detail "Using config: %s" config)
+                  (clojure {:dir "./nvd_check_helper_project"}
+                           "-J-Dclojure.main.report=stderr -M -m nvd.task.check"
+                           config
+                           (with-out-str (clojure "-Spath"))))}}}
