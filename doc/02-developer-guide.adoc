@@ -65,6 +65,7 @@ $ bb clean
 $ bb download-deps
 ----
 
+=== Testing
 Run all Clojure tests
 
 [source,shell]
@@ -87,6 +88,7 @@ $ bb test --clj-version 1.9
 ----
 (defaults to `1.4`, specify `:all` to test against all supported Clojure versions)
 
+=== Linting
 Our CI workflow lints sources with clj-kondo, and eastwood - and you can too!
 
 [source,shell]
@@ -96,3 +98,12 @@ $ bb lint-eastwood
 ----
 
 To run both: `bb lint`
+
+=== Vulnerability scanning
+We automatically scan for vulnerabilities in our dependencies on CI.
+If you want to run this work locally:
+
+[source,shell]
+----
+bb nvd-scan
+----
