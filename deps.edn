@@ -39,16 +39,11 @@
            :old-runner {:override-deps {io.github.cognitect-labs/test-runner
                                         ^:antq/exclude
                                         {:git/sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}
-           :jar {:extra-deps  {seancorfield/depstar #_:clj-kondo/ignore {:mvn/version "RELEASE"}}
-                 :main-opts ["-m" "hf.depstar.jar" "pomegranate.jar"]}
-           :deploy {:extra-deps {slipset/deps-deploy {:git/url "https://github.com/slipset/deps-deploy.git"
-                                                      :sha "fd8ff2de9c4bda82a1c69c387d56217473b394be"}}
-                    :main-opts ["-m" "deps-deploy.deps-deploy" "deploy"
-                                "pomegranate.jar" "true"]}
-           :install {:extra-deps {slipset/deps-deploy {:git/url "https://github.com/slipset/deps-deploy.git"
-                                                       :sha "fd8ff2de9c4bda82a1c69c387d56217473b394be"}}
-                     :main-opts ["-m" "deps-deploy.deps-deploy" "install"
-                                 "pomegranate.jar" "true"]}
+           :build {:extra-paths ["build"]
+                   :deps {org.clojure/tools.build {:mvn/version "0.9.2"}
+                          slipset/deps-deploy {:git/url "https://github.com/slipset/deps-deploy.git"
+                                               :sha "fd8ff2de9c4bda82a1c69c387d56217473b394be"}}
+                   :ns-default build}
            ;; for consistent linting we use a specific version of clj-kondo through the jvm
            :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2023.01.20"}}
                        :override-deps {org.clojure/clojure {:mvn/version "1.11.1"}}
