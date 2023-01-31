@@ -41,6 +41,13 @@
         (keep parse-raw-tag)
         (most-recent-tag)))
 
+(defn- not-fork? []
+  (let [origin-url (->> (t/shell {:out :string} "git remote get-url origin")
+                        :out
+                        string/trim)]
+    (some #{origin-url} ["https://github.com/clj-commons/pomegranate.git"
+                         "git@github.com:clj-commons/pomegranate.git"])))
+
 (defn- master-branch? []
   (let [current-branch (->> (t/shell {:out :string} "git rev-parse --abbrev-ref HEAD")
                             :out
@@ -83,7 +90,9 @@
   (let [changelog-findings (reduce (fn [acc n] (assoc acc (:error n) n))
                                    {}
                                    (analyze-changelog))]
-    [{:check "on master branch"
+    [{:check "not on fork"
+      :result (if (not-fork?) :pass :fail)}
+     {:check "on master branch"
       :result (if (master-branch?) :pass :fail)}
      {:check "no uncommitted code"
       :result (if (uncommitted-code?) :fail :pass)}
