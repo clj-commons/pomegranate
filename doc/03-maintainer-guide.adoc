@@ -16,6 +16,7 @@ bb publish
 It validates:
 
 * local git
+** you are not on a fork
 ** you are on master branch
 ** do not have any uncommitted code
 ** do not have any unpushed commits
