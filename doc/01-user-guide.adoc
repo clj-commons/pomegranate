@@ -259,6 +259,7 @@ Maybe you are running a local instance for caching.
 ==== Deploying Artifacts
 
 TIP: If you want a tool that does this well that uses the Pomegranate to do so, consider using https://github.com/slipset/deps-deploy[deps-deploy].
+Fun fact: To deploy itself to clojars, Pomegranate uses deps-deploy, which uses Pomegranate.
 
 ===== To Local Maven Repo
 Assuming `pom.xml` and `target/some-library.jar` files, exist:
