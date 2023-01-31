@@ -17,8 +17,8 @@
                 :version version
                 :scm {:tag (build-shared/version->tag version)}
                 :basis basis
-                :src-dirs ["src/clojure"]})
-  (b/copy-dir {:src-dirs ["src/clojure"]
+                :src-dirs ["src/main/clojure"]})
+  (b/copy-dir {:src-dirs ["src/main/clojure"]
                :target-dir class-dir})
   (b/jar {:class-dir class-dir
           :jar-file jar-file}))
