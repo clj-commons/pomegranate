@@ -1,6 +1,8 @@
-{:paths ["script"]
+{:paths ["script" "build"]
  :deps {lread/status-line {:git/url "https://github.com/lread/status-line.git"
-                           :sha "cf44c15f30ea3867227fa61ceb823e5e942c707f"}}
+                           :sha "cf44c15f30ea3867227fa61ceb823e5e942c707f"}
+        io.github.babashka/neil {:git/tag "v0.1.53"
+                                 :git/sha "5d30c87"}}
  :tasks {;; setup
          :requires ([babashka.fs :as fs]
                     [clojure.string :as string]
@@ -38,4 +40,27 @@
                   (clojure {:dir "./nvd_check_helper_project"}
                            "-J-Dclojure.main.report=stderr -M -m nvd.task.check"
                            config
-                           (with-out-str (clojure "-Spath"))))}}}
+                           (with-out-str (clojure "-Spath"))))}
+         pubcheck
+         {:doc "Run only publish checks (without publishing)"
+          :task publish/pubcheck}
+         publish
+         {:doc "Publish a release (for maintainers)"
+          :task publish/-main}
+         install
+         {:doc "Install to local maven repo (usually for local adhoc testing)"
+          :task (clojure "-T:build install")}
+         neil ;; let's not rely on a random version of neil
+         {:doc "Pinned version of babashka/neil (used in scripting)"
+          :task babashka.neil/-main}
+
+         ;; hidden tasks, no need for folks to be trying these ci invoked tasks
+         -ci-clojars-deploy
+         {:doc "triggered on ci by release tag"
+          :task ci-publish/clojars-deploy}
+         -ci-github-create-release
+         {:doc "triggered on ci by release tag"
+          :task ci-publish/github-create-release}
+         -ci-cljdoc-request-build
+         {:doc "ask cljdoc to build docs for new release"
+          :task ci-publish/cljdoc-request-build}}}

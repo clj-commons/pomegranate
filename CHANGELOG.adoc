@@ -5,6 +5,12 @@ A release with known breaking changes is marked with:
 * [breaking] you probably need to change your code
 * [minor breaking] you likely don't need to change your code
 
+// DO NOT EDIT: the "Unreleased" section header is automatically updated by bb publish
+// bb publish will fail on any of:
+// - unreleased section not found,
+// - unreleased section empty
+// - optional attribute is not [breaking] or [minor breaking]
+//   (adjust these in publish.clj as you see fit)
 == Unreleased
 
 * Bump stale deps, some of which had vulnerabilities

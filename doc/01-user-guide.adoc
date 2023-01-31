@@ -1,6 +1,7 @@
 = User Guide
 :toclevels: 5
 :toc:
+// DO NOT EDIT: the lib-version parameter is automatically updated by bb publish
 :lib-version: 1.2.1
 
 == Audience

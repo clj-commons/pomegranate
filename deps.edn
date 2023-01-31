@@ -16,7 +16,13 @@
         org.apache.httpcomponents/httpclient {:mvn/version "4.5.14"}
         org.apache.httpcomponents/httpcore {:mvn/version "4.4.16"}}
 
- :aliases {:1.4 {:override-deps {org.clojure/clojure {:mvn/version "1.4.0"}}}
+ :aliases {;; we use babashka/neil for project attributes
+           ;; publish workflow references these values (and automatically bumps patch component of version)
+           :neil {:project {:version "1.2.22"
+                            :name clj-commons/pomegranate}}
+
+           ;; support testing against specific versions of Clojure
+           :1.4 {:override-deps {org.clojure/clojure {:mvn/version "1.4.0"}}}
            :1.5 {:override-deps {org.clojure/clojure {:mvn/version "1.5.1"}}}
            :1.6 {:override-deps {org.clojure/clojure {:mvn/version "1.6.0"}}}
            :1.7 {:override-deps {org.clojure/clojure {:mvn/version "1.7.0"}}}
