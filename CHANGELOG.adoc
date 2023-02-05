@@ -35,6 +35,12 @@ A release with known breaking changes is marked with:
 ** Add automated clj-kondo linting
 (https://github.com/clj-commons/pomegranate/pull/139[#139])
 (https://github.com/lread[@lread])
+** Add automated release workflow
+(https://github.com/clj-commons/pomegranate/pull/138[#138])
+(https://github.com/lread[@lread])
+** Dependencies now specified only once
+(https://github.com/clj-commons/pomegranate/pull/136[#136])
+(https://github.com/lread[@lread])
 
 == v1.2.1 - 2021-04-12
 
