@@ -68,6 +68,16 @@
       (-> out string/trim seq)
       (status/die 1 "Failed to check for unpushed commits, are you on an unpushed branch?"))))
 
+(defn- commit-matches-master? []
+  (let [master-head-sha (-> (t/shell {:out :string} "git ls-remote https://github.com/clj-commons/pomegranate.git master")
+                             :out
+                             (string/split #"\s+")
+                             first)
+        local-head-sha (-> (t/shell {:out :string} "git rev-parse HEAD")
+                           :out
+                           string/trim)]
+    (= master-head-sha local-head-sha)))
+
 (defn- analyze-changelog
   "Certainly not fool proof, but should help for common mistakes"
   []
@@ -98,6 +108,8 @@
       :result (if (uncommitted-code?) :fail :pass)}
      {:check "no unpushed commits"
       :result (if (unpushed-commits?) :fail :pass)}
+     {:check "in synch with master HEAD"
+      :result (if (commit-matches-master?) :pass :fail)}
      {:check "changelog has unreleased section"
       :result (if (:section-missing changelog-findings) :fail :pass)}
      {:check "changelog unreleased section attributes valid"
@@ -273,6 +285,4 @@
 
   (last-release-tag)
   ;; => "Release-1.2.1"
-
-
 )
