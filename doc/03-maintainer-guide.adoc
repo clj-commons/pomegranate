@@ -13,17 +13,32 @@ Is invoked from the command line via:
 bb publish
 ----
 
-It validates:
+[TIP]
+====
+I do my ongoing work from a GitHub fork, but I'll publish from a fresh master clone.
+For example: +
+[source,shell]
+----
+$ git clone git@github.com:clj-commons/pomegranate.git pomegranate-master
+$ cd pomegranate-master
+$ bb publish
+----
+====
+
+The publish task locally validates:
 
 * local git
 ** you are not on a fork
 ** you are on master branch
 ** do not have any uncommitted code
 ** do not have any unpushed commits
+** local head sha matches matches remote head sha
 * changelog
 ** Has an "Unreleased" section with content
 
-Then locally:
+TIP: you can run just the publish validations alone via `bb pubcheck`
+
+Then also locally:
 
 . bumps the version `<release count>` (our scheme is `major.minor.<release count>`)
 ** Our version is stored in `deps.edn` under `:aliases` `:neil` `:project` `:version`
@@ -41,8 +56,6 @@ Then up on CI, the CI publish workflow is only triggered when it sees a release 
 . a release jar is published to clojars
 . a GitHub release is created
 . cljdoc is informed of the new release
-
-TIP: you can run just the publish validations alone via `bb pubcheck`
 
 == Relevant Sources
 
