@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>clj-commons</groupId>
-  <artifactId>pomegranate</artifactId>
-  <version>1.2.1</version>
-  <name>pomegranate</name>
-  <description>Pomegranate is a library that provides a sane Clojure API for Maven-resolver</description>
+  <name>clj-commons/pomegranate</name>
+  <description>A sane Clojure API for Maven Artifact Resolver + dynamic runtime modification of the classpath</description>
   <url>https://github.com/clj-commons/pomegranate</url>
   <licenses>
     <license>
@@ -25,125 +22,14 @@
     <url>https://github.com/clj-commons/pomegranate</url>
     <connection>scm:git:git://github.com:clj-commons/pomegranate.git</connection>
     <developerConnection>scm:git:ssh://git@github.com:clj-commons/pomegranate.git</developerConnection>
-    <tag>HEAD</tag>
   </scm>
-
-  <parent>
-    <groupId>org.clojure</groupId>
-    <artifactId>pom.contrib</artifactId>
-    <version>1.1.0</version>
-  </parent>
-
   <properties>
-    <clojure.version>1.4.0</clojure.version>
-    <mavenVersion>3.8.7</mavenVersion>
-    <resolverVersion>1.9.4</resolverVersion>
-    <wagonVersion>3.5.3</wagonVersion>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.clojure</groupId>
-      <artifactId>clojure</artifactId>
-      <version>${clojure.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven</groupId>
-      <artifactId>maven-resolver-provider</artifactId>
-      <version>${mavenVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-api</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-spi</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-util</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-impl</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-transport-file</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-transport-http</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-transport-wagon</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.resolver</groupId>
-      <artifactId>maven-resolver-connector-basic</artifactId>
-      <version>${resolverVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.tcrawley</groupId>
-      <artifactId>dynapath</artifactId>
-      <version>1.1.0</version>
-    </dependency>
-    <!-- wagons for dependency resolution -->
-    <dependency>
-      <groupId>org.apache.maven.wagon</groupId>
-      <artifactId>wagon-provider-api</artifactId>
-      <version>${wagonVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.wagon</groupId>
-      <artifactId>wagon-http</artifactId>
-      <version>${wagonVersion}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.wagon</groupId>
-      <artifactId>wagon-ssh</artifactId>
-      <version>${wagonVersion}</version>
-      <optional>true</optional>
-    </dependency>
-    <!-- otherwise we get an earlier version that is missing the needed
-         org.apache.http.conn.HttpClientConnectionManager class -->
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>4.5.14</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-      <version>4.4.16</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>2.0.6</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-  <build>
-    <sourceDirectory>src/main/clojure</sourceDirectory>
-  </build>
   <repositories>
     <repository>
       <id>clojars</id>
       <url>https://repo.clojars.org/</url>
-    </repository>
-    <repository>
-      <id>sonatype</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
     </repository>
   </repositories>
   <distributionManagement>
