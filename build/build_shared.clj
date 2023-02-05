@@ -15,6 +15,9 @@
 (defn lib-artifact-name []
   (-> (project-info) :name))
 
+;; happens to be the same for this project
+(def lib-github-coords lib-artifact-name)
+
 (defn version->tag [version]
   (str version-tag-prefix version))
 

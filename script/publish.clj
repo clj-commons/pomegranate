@@ -8,7 +8,6 @@
 
 ;; Note to lurkers: doc updates are geared to AsciiDoc files.
 
-(def github-coords "clj-commons/pomegranate")
 (def changelog-fname "CHANGELOG.adoc")
 (def user-guide-fname "doc/01-user-guide.adoc")
 ;; this project started with "pomegranate-", then moved to "Release-" but we prefer "v" as a version tag prefix
@@ -17,7 +16,7 @@
 (defn- raw-tags[]
   (->>  (t/shell {:out :string}
                  ;; specifying the url ensures we don't get tags for some dev fork
-                 "git ls-remote --tags --refs" (format "https://github.com/%s.git" github-coords))
+                 "git ls-remote --tags --refs" (format "https://github.com/%s.git" (build-shared/lib-github-coords)))
           :out
           string/split-lines))
 
@@ -45,8 +44,8 @@
   (let [origin-url (->> (t/shell {:out :string} "git remote get-url origin")
                         :out
                         string/trim)]
-    (some #{origin-url} ["https://github.com/clj-commons/pomegranate.git"
-                         "git@github.com:clj-commons/pomegranate.git"])))
+    (some #{origin-url} [(format "https://github.com/%s.git" (build-shared/lib-github-coords))
+                         (format "git@github.com:%s.git" (build-shared/lib-github-coords))])))
 
 (defn- master-branch? []
   (let [current-branch (->> (t/shell {:out :string} "git rev-parse --abbrev-ref HEAD")
@@ -69,7 +68,7 @@
       (status/die 1 "Failed to check for unpushed commits, are you on an unpushed branch?"))))
 
 (defn- commit-matches-master? []
-  (let [master-head-sha (-> (t/shell {:out :string} "git ls-remote https://github.com/clj-commons/pomegranate.git master")
+  (let [master-head-sha (-> (t/shell {:out :string} (format "git ls-remote https://github.com/%s.git master" (build-shared/lib-github-coords)))
                              :out
                              (string/split #"\s+")
                              first)
@@ -168,7 +167,7 @@
                   ;; followed by link to commit log
                  (when last-release-tag
                    (str
-                    "https://github.com/" github-coords "/compare/"
+                    "https://github.com/" (build-shared/lib-github-coords) "/compare/"
                     last-release-tag
                     "\\\\..."  ;; single backslash is escape for AsciiDoc
                     release-tag

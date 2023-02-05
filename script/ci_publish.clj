@@ -7,7 +7,7 @@
             [lread.status-line :as status]
             [build-shared]))
 
-(def changelog-url "https://github.com/clj-commons/pomegranate/blob/master/CHANGELOG.adoc")
+(def ^:private changelog-url (format "https://github.com/%s/blob/master/CHANGELOG.adoc" (build-shared/lib-github-coords)))
 
 (defn- assert-on-ci []
   (when (not (System/getenv "CI"))
