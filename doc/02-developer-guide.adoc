@@ -66,18 +66,29 @@ $ bb download-deps
 ----
 
 === Testing
-Run all Clojure tests
+Run Clojure tests.
+We have 2 suites:
 
+* `:unit` - general unit tests
+* `:isolated` - tests that pollute classloaders and classpath, and are therefore run separately
+
+To run all test suites under Clojure `1.4` (our minimum supported version):
 [source,shell]
 ----
 $ bb test
+----
+
+To only run a single suite:
+[source,shell]
+----
+$ bb test --suite :unit
 ----
 
 You can also include Cognitect test runner options:
 
 [source,shell]
 ----
-$ bb test --var cemerick.pomegranate.aether-test/live-resolution
+$ bb test --suite :unit --var cemerick.pomegranate.aether-test/live-resolution
 ----
 
 ...and/or Clojure version:
@@ -86,7 +97,7 @@ $ bb test --var cemerick.pomegranate.aether-test/live-resolution
 ----
 $ bb test --clj-version 1.9
 ----
-(defaults to `1.4`, specify `:all` to test against all supported Clojure versions)
+(specify `:all` to test against all supported Clojure versions)
 
 === Linting
 Our CI workflow lints sources with clj-kondo, and eastwood - and you can too!

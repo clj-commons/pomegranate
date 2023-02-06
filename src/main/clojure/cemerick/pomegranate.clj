@@ -27,15 +27,17 @@
    Attempt to add `jar-or-dir`, a string or `java.io.File`, to `classloader`.
 
    When `classloader` is not provided, searches for a modifiable classloader rooted at the current thread's context classloader."
-  ([jar-or-dir classloader]
+  ([jar-or-dir ^ClassLoader classloader]
      (when-not (dp/add-classpath-url classloader (.toURL (.toURI (io/file jar-or-dir))))
-       (throw (IllegalStateException. (str classloader " is not a modifiable classloader")))))
+       (throw (IllegalStateException. (str (-> classloader .getClass .getSimpleName) " is not a modifiable classloader")))))
   ([jar-or-dir]
     (let [classloaders (classloader-hierarchy)]
       (if-let [cl (last (filter modifiable-classloader? classloaders))]
         (add-classpath jar-or-dir cl)
         (throw (IllegalStateException. (str "Could not find a suitable classloader to modify from "
-                                            classloaders)))))))
+                                            (mapv (fn [^ClassLoader c]
+                                                    (-> c .getClass .getSimpleName))
+                                                  classloaders))))))))
 
 (defn add-dependencies
   "Resolves dependency `:coordinates` against Maven `:repositories`, then adds all
@@ -65,7 +67,9 @@
     deps))
 
 (defn get-classpath
-  "Returns the effective classpath (i.e. _not_ the value of
+  "⚠️  for JDK 9+ returns an empty sequence.
+
+  Returns the effective classpath (i.e. _not_ the value of
    `(System/getProperty \"java.class.path\")` as a seq of URL strings.
 
    Produces the classpath from all classloaders by default, or from a
@@ -102,3 +106,20 @@
   ([classloaders resource-name]
      (distinct (mapcat second (classloader-resources classloaders resource-name))))
   ([resource-name] (resources (classloader-hierarchy) resource-name)))
+
+(comment
+  (io/resource "boo")
+  ;; => nil
+
+  (-> (classloader-hierarchy) last .getClass .getSimpleName)
+  ;; jdk8
+  ;; => "ExtClassLoader"
+  ;; jdk19
+  ;; => "PlatformClassLoader"
+
+  (resources [(last (classloader-hierarchy))] "META-INF/MANIFEST.MF")
+  ;; jdk8
+  ;; => ()
+  ;; jdk19
+  ;; => ()
+  )

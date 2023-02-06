@@ -2,7 +2,7 @@
   (:require [clojure.test]))
 
 (def platform
-  (str "clj " (clojure-version)))
+  (str "clj " (clojure-version) " jdk " (System/getProperty "java.version")))
 
 (defmethod clojure.test/report :begin-test-var [m]
   (let [test-name (-> m :var meta :name)]
