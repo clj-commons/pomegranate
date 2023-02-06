@@ -19,7 +19,7 @@
   (when (cache-exists?)
     (delete-cache))
   (let [clj-cp (-> (t/clojure {:out :string}
-                              "-Spath -M:test")
+                              "-Spath -M:test:isolated")
                    with-out-str
                    string/trim)
         bb-cp (bbcp/get-classpath)]

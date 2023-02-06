@@ -18,7 +18,7 @@
          {:doc "bring down Clojure deps"
           :task download-deps/-main}
          test
-         {:doc "Runs tests under Clojure [--clj-version] (recognizes cognitect test-runner args)"
+         {:doc "Runs tests under Clojure [--clj-version] [--suite] [--help] (recognizes cognitect test-runner args)"
           :requires ([test-clj])
           :task (apply test-clj/-main *command-line-args*)}
          lint-kondo
@@ -26,7 +26,7 @@
           :task lint/-main}
          lint-eastwood
          {:doc "Lint source code with Eastwood"
-          :task (clojure "-M:test:eastwood")}
+          :task (clojure "-M:test:isolated:eastwood")}
          lint
          {:doc "Run all lints"
           :depends [lint-kondo lint-eastwood]}
