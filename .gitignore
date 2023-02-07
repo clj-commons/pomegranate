@@ -9,6 +9,7 @@
 .project
 .classpath
 .settings
+.nrepl-port
 
 target
 classes
