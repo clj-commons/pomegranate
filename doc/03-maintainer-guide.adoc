@@ -13,18 +13,6 @@ Is invoked from the command line via:
 bb publish
 ----
 
-[TIP]
-====
-I do my ongoing work from a GitHub fork, but I'll publish from a fresh master clone.
-For example: +
-[source,shell]
-----
-$ git clone git@github.com:clj-commons/pomegranate.git pomegranate-master
-$ cd pomegranate-master
-$ bb publish
-----
-====
-
 The publish task locally validates:
 
 * local git
@@ -36,7 +24,7 @@ The publish task locally validates:
 * changelog
 ** Has an "Unreleased" section with content
 
-TIP: you can run just the publish validations alone via `bb pubcheck`
+TIP: to run these validations without publishing, run `bb pubcheck`
 
 Then also locally:
 
