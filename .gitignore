@@ -20,3 +20,6 @@ tmp
 .eastwood
 # for kondo and lsp caches
 .cache
+
+# a spot for fiddly stuff you want to keep but not commit
+/fiddle
