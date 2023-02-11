@@ -5,6 +5,7 @@ A sane Clojure API for Maven Artifact Resolver + dynamic runtime modification of
 
 //Badges
 https://clojars.org/{project-coords}[image:https://img.shields.io/clojars/v/{project-coords}.svg[Clojars Project]] 
+https://cljdoc.org/d/{project-coords}[image:https://cljdoc.org/badge/{project-coords}[cljdoc badge]]
 https://github.com/{project-coords}/actions/workflows/tests.yml[image:https://github.com/{project-coords}/actions/workflows/tests.yml/badge.svg[CI tests]]
 https://github.com/{project-coords}/actions/workflows/nvd_scanner.yml[image:https://github.com/{project-coords}/actions/workflows/nvd_scanner.yml/badge.svg[Vulnerability Scan]]
 https://clojurians.slack.com/archives/C04KJME1UPL[image:https://img.shields.io/badge/slack-join_chat-brightgreen.svg[Slack chat]]
