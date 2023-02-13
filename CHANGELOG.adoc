@@ -13,6 +13,8 @@ A release with known breaking changes is marked with:
 //   (adjust these in publish.clj as you see fit)
 == Unreleased
 
+== v1.2.23 - 2023-02-13 [[v1.2.23]]
+
 * Bump stale deps, some of which had vulnerabilities
 (https://github.com/clj-commons/pomegranate/issues/134[#134])
 (https://github.com/lread[@lread])
@@ -45,6 +47,8 @@ A release with known breaking changes is marked with:
 ** Review and update classpath related tests
 (https://github.com/clj-commons/pomegranate/pull/154[#154])
 (https://github.com/lread[@lread])
+
+https://github.com/clj-commons/pomegranate/compare/Release-1.2.1\...v1.2.23[commit log]
 
 == v1.2.1 - 2021-04-12
 
