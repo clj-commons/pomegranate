@@ -27,7 +27,8 @@ Some projects that use Pomegranate are:
 * https://github.com/benedekfazekas/mranderson[MrAnderson] - Dependency inlining and shadowing 
 * https://github.com/clojure-emacs/enrich-classpath[enrich-classpath] - Enriches Lein/deps.edn dependency trees with Java sources, JDK sources, javadocs, etc 
 * https://github.com/pink-gorilla/nrepl-middleware[nrepl-middleware] - Websocket relay, Eval sniffing, core.async client, notebook rendering
-* https://github.com/jsa-aerial/saite[saite] - Interactive document creation for exploratory graphics and visualizations.
+* https://github.com/jsa-aerial/saite[saite] - Interactive document creation for exploratory graphics and visualizations
+* https://github.com/ndevreeze/genie[Genie] - Run Clojure scripts with a daemon process
 
 Are you using Pomegranate? Let us know and we'll add your project here!
 
