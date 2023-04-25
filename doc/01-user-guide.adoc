@@ -24,10 +24,10 @@ If Pomegranate is not your cup of tea, consider having a look at:
 
 * https://github.com/clojure/tools.deps[clojure/tools.deps]
 +
-It also includes resolving dependencies using the Maven Artifact Resolver.
+Like Pomegranate, Clojure's tools.deps resolves dependencies using the Maven Artifact Resolver.
 Unlike Pomegranate, by design, it is focused on runtime dependencies only.
 +
-It does https://github.com/clojure/tools.deps/tree/add-lib3[have a branch that supports adding deps at runtime], but this work is experimental and may never get merged to master.
+Clojure v1.12, in alpha at the time of this writing, includes support for https://clojure.org/news/2023/04/14/clojure-1-12-alpha2#_add_libraries_for_interactive_use[adding libraries at runtime].
 * https://github.com/lambdaisland/classpath[com.lambdaisland.classpath]
 +
 Experimental utilities for dealing with "the classpath", and dynamically loading libraries.
