@@ -116,5 +116,20 @@ If you want to run this work locally:
 
 [source,shell]
 ----
-bb nvd-scan
+$ bb nvd-scan
 ----
+
+=== Outdated Deps
+You can check for outdated dependencies via:
+
+[source,shell]
+----
+$ bb outdated
+----
+
+Before upgrading `+org.apache.maven.*+` deps, make sure there is a good reason to do so.
+Otherwise, don't bother bumping these deps.
+Good reasons to bump `+org.apache.maven.*+` deps might be:
+
+* to overcome a security vulnerability
+* there is some necessary new/corrected behaviour

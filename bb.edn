@@ -30,6 +30,11 @@
          lint
          {:doc "Run all lints"
           :depends [lint-kondo lint-eastwood]}
+         outdated
+         {:doc "Report on outdated dependencies"
+          :task (do
+                  (clojure {:continue true} "-M:outdated")
+                  (status/line :warn "Do be sure there is a good reason to ugprade org.apache.maven.* deps") )}
          nvd-scan
          {:doc "Check for security vulnerabilities in dependencies"
           :task (let [config (if (System/getenv "CI")
