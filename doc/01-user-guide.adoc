@@ -294,7 +294,7 @@ Assuming `pom.xml` and `target/some-library.jar`, exist, a deploy to clojars cou
 (aether/deploy :coordinates '[lread/mucking-around "1.2.3"]
                :jar-file (io/file "target" "some-library.jar")
                :pom-file (io/file "pom.xml")
-               :repository {:url "https://repo.clojars.org"
-                            :username (System/getEnv "CLOJARS_USERNAME")
-                            :password (System/getEnv "CLOJARS_PASSWORD")})
+               :repository {"clojars" {:url "https://repo.clojars.org"
+                                       :username (System/getenv "CLOJARS_USERNAME")
+                                       :password (System/getenv "CLOJARS_PASSWORD")}})
 ----
