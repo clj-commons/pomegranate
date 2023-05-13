@@ -28,6 +28,9 @@ Like Pomegranate, Clojure's tools.deps resolves dependencies using the Maven Art
 Unlike Pomegranate, by design, it is focused on runtime dependencies only.
 +
 Clojure v1.12, in alpha at the time of this writing, includes support for https://clojure.org/news/2023/04/14/clojure-1-12-alpha2#_add_libraries_for_interactive_use[adding libraries at runtime].
+* https://github.com/borkdude/deps.add-lib[borkdude/deps.add-lib]
++
+Clojure v1.12's add-lib feature for leiningen and/or other environments without a specific version of the clojure CLI
 * https://github.com/lambdaisland/classpath[com.lambdaisland.classpath]
 +
 Experimental utilities for dealing with "the classpath", and dynamically loading libraries.
