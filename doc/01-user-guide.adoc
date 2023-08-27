@@ -47,7 +47,7 @@ It makes its first release under `clj-commons/pomegranate` to Clojars.
 
 [source,clojure,subs="attributes+"]
 ----
-[clj-commons/pomegrante "{lib-version}"]
+[clj-commons/pomegranate "{lib-version}"]
 ----
 
 === Clojure CLI `deps.edn`
