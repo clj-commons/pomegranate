@@ -166,7 +166,7 @@ Let's try resolving an artifact:
 ;; => ([metosin/malli "0.10.0"])
 ----
 
-Ok not too exiting maybe, but now resolve dependencies for that artifact:
+Okay, not too exciting, maybe, but now let's resolve dependencies for that artifact:
 
 [source,clojure]
 ----
@@ -187,7 +187,7 @@ Ok not too exiting maybe, but now resolve dependencies for that artifact:
 ----
 
 Interesting.
-Also note that there's some details hiding in metadata:
+Also note that there are some details hiding in metadata:
 
 [source,clojure]
 ----
