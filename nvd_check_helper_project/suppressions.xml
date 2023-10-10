@@ -14,4 +14,12 @@
     <cve>CVE-2008-5729</cve>
     <cve>CVE-2008-5742</cve>
   </suppress>
+  <suppress>
+    <notes><![CDATA[
+    False positive, see https://github.com/jeremylong/DependencyCheck/issues/5973
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/org\.codehaus\.plexus/plexus\-(container-default|interpolation|interactivity-api)@.*$</packageUrl>
+    <cve>CVE-2022-4244</cve>
+    <cve>CVE-2022-4245</cve>
+  </suppress>
 </suppressions>
