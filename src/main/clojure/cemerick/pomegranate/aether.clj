@@ -293,15 +293,16 @@
    Use it if you need to, but there's a good chance you won't need to.
 
    Returns an `org.eclipse.aether.graph.Dependency` instance converted from a lein-style dependency vector."
-  [[_group-artifact _version & {:keys [scope optional exclusions]
-                                :as _opts
-                                :or {scope "compile"
-                                     optional false}}
-    :as dep-spec]]
-  (Dependency. (artifact dep-spec)
-               scope
-               optional
-               (map (comp exclusion normalize-exclusion-spec) exclusions)))
+  ([dep-spec] (dependency dep-spec "compile"))
+  ([[_group-artifact _version & {:keys [scope optional exclusions]
+                                 :as   _opts
+                                 :or   {optional false}}
+     :as dep-spec]
+    default-scope]
+   (Dependency. (artifact dep-spec)
+                (or scope default-scope)
+                optional
+                (map (comp exclusion normalize-exclusion-spec) exclusions))))
 
 (declare dep-spec*)
 
@@ -754,15 +755,16 @@
 
 (defn- coords->Dependencies
   "Converts a coordinates vector to the maven representation, as Dependency objects."
-  [files coordinates]
+  [files coordinates default-scope]
   (->> coordinates
-       (map #(if-let [local-file (get files %)]
-              (.setArtifact ^Dependency (dependency %)
-                            (-> ^Dependency (dependency %)
-                                .getArtifact
-                                (.setProperties {ArtifactProperties/LOCAL_PATH
-                                                 (.getPath (io/file local-file))})))
-              (dependency %)))
+       (map #(let [^Dependency dep (dependency % default-scope)]
+               (if-let [local-file (get files %)]
+                 (.setArtifact dep
+                               (-> dep
+                                   .getArtifact
+                                   (.setProperties {ArtifactProperties/LOCAL_PATH
+                                                    (.getPath (io/file local-file))})))
+                 dep)))
        vec))
 
 (defn resolve-dependencies*
@@ -795,8 +797,8 @@
                   :transfer-listener transfer-listener
                   :mirror-selector mirror-selector})
         coordinates (merge-versions-from-managed-coords coordinates managed-coordinates)
-        deps (coords->Dependencies files coordinates)
-        managed-deps (coords->Dependencies files managed-coordinates)
+        deps (coords->Dependencies files coordinates "compile")
+        managed-deps (coords->Dependencies files managed-coordinates nil)
         collect-request (doto (CollectRequest. ^java.util.List deps
                                                ^java.util.List managed-deps
                                                ^java.util.List
