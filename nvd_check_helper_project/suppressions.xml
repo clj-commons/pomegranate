@@ -22,4 +22,12 @@
     <cve>CVE-2022-4244</cve>
     <cve>CVE-2022-4245</cve>
   </suppress>
+  <suppress>
+    <notes><![CDATA[
+    We specify Clojure 1.4 as our minimum supported version of Clojure.
+    This CVE is described as: In Clojure before 1.9.0, classes can be used to construct a serialized object that executes arbitrary code upon deserialization. This is relevant if a server deserializes untrusted objects.
+    We'll suppress this one and expect users of pomegranate to vet using old versions of Clojure.
+    ]]></notes>
+    <cve>CVE-2017-20189</cve>
+  </suppress>
 </suppressions>
