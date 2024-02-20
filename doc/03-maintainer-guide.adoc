@@ -62,6 +62,10 @@ CI - We use GitHub Actions for this project
 
 Clojars secrets are protected under the `publish` environment which is only referenced by `publish.yml`.
 
+The nvd api token is stored under the `nvd` environment and refernced by `nvd_scanner.yml`.
+Should you need to update the token, you can request one here: https://nvd.nist.gov/developers/request-an-api-key.
+If you are using gmail, you can request a unique token for pomegranate CI by including `+pomegranate` in your email address, ex. `bob@gmail.com` becomes `bob+pomegranate@gmail.com`.
+
 == Expected Oddities
 
 When publishing, you will see both the `tests` workflow triggered and the `publish` workflow triggered (which also invokes the `tests` workflow).

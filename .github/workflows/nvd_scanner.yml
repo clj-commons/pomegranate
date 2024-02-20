@@ -11,6 +11,7 @@ on:
 
 jobs:
   build:
+    environment: nvd
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -33,4 +34,6 @@ jobs:
         key: nvd-cache-we-are-happy-to-share-across-branches-${{ steps.get-date.outputs.date }}
 
     - name: Run NVD Scanner
+      env:
+        NVD_API_TOKEN: ${{ secrets.NVD_API_TOKEN }}
       run: bb nvd-scan

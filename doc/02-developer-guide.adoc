@@ -112,12 +112,14 @@ To run both: `bb lint`
 
 === Vulnerability scanning
 We automatically scan for vulnerabilities in our dependencies on CI.
-If you want to run this work locally:
+If you want to run this work locally, you can for example:
 
 [source,shell]
 ----
-$ bb nvd-scan
+$ NVD_API_TOKEN=your-token-here bb nvd-scan
 ----
+
+Replace `your-token-here` with your personal nvd api token which you can easily request from https://nvd.nist.gov/developers/request-an-api-key.
 
 === Outdated Deps
 You can check for outdated dependencies via:
