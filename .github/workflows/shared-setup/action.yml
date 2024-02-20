@@ -14,7 +14,7 @@ runs:
 
   steps:
     - name: Clojure deps cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.m2/repository
@@ -24,13 +24,13 @@ runs:
         restore-keys: cljdeps-
 
     - name: Setup Java
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: ${{ inputs.jdk }}
 
     - name: Install Clojure Tools
-      uses: DeLaGuardo/setup-clojure@10.1
+      uses: DeLaGuardo/setup-clojure@12.5
       with:
         cli: 'latest'
         bb: 'latest'
