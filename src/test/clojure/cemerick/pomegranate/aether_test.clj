@@ -250,6 +250,15 @@
                               files))))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.1" "demo-1.0.1.jar"))
                               files))))))
+  (testing "scope is honored for transitive deps when using managed dependencies"
+    (let [deps (aether/resolve-dependencies
+                 :repositories test-repo
+                 :coordinates '[[demo/demo2 "1.0.0" :scope "test"]]
+                 :managed-coordinates '[[demo/demo "1.0.1"]]
+                 :local-repo tmp-local-repo-dir)]
+      (is (= '{[demo/demo2 "1.0.0" :scope "test"] #{[demo "1.0.1" :scope "test"]}
+               [demo "1.0.1" :scope "test"] nil}
+             deps))))
   (testing "unused entries in managed coordinates are not resolved"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
