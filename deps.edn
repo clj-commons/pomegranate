@@ -34,7 +34,8 @@
            :1.8 {:override-deps {org.clojure/clojure {:mvn/version "1.8.0"}}}
            :1.9 {:override-deps {org.clojure/clojure {:mvn/version "1.9.0"}}}
            :1.10 {:override-deps {org.clojure/clojure {:mvn/version "1.10.3"}}}
-           :1.11 {:override-deps {org.clojure/clojure {:mvn/version "1.11.1"}}}
+           :1.11 {:override-deps {org.clojure/clojure {:mvn/version "1.11.2"}}}
+           :1.12 {:override-deps {org.clojure/clojure {:mvn/version "1.12.0-alpha9"}}}
 
            :test {:extra-paths ["src/test/clojure"]
                   :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
@@ -52,12 +53,12 @@
                                         {:git/sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}
 
            :build {:extra-paths ["build"]
-                   :deps {org.clojure/tools.build {:mvn/version "0.9.2"}
+                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.0"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}
 
            ;; for consistent linting we use a specific version of clj-kondo through the jvm
-           :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2024.02.12"}}
+           :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2024.03.05"}}
                        :override-deps {org.clojure/clojure {:mvn/version "1.11.1"}}
                        :main-opts ["-m" "clj-kondo.main"]}
            :eastwood {:main-opts  ["-m" "eastwood.lint" {:exclude-namespaces [cognitect.test-runner]
@@ -65,7 +66,7 @@
                       :override-deps {org.clojure/clojure {:mvn/version "1.11.1"}}
                       :extra-deps {jonase/eastwood {:mvn/version "1.4.2"}}}
 
-           :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.8.1173"}
+           :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.8.1185"}
                                    org.clojure/clojure {:mvn/version "1.11.1"}
                                    org.slf4j/slf4j-simple {:mvn/version "2.0.12"} ;; to rid ourselves of logger warnings
                                    }
