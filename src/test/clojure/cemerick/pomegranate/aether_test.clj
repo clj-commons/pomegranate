@@ -167,7 +167,7 @@
            (.getAbsolutePath ^File (first (aether/dependency-files deps)))))))
 
 (deftest resolve-managed-dependencies
-  (testing "supports coordinates w/o version number, with managed coordinates"
+  (testing "coordinate inherits version from managed coordinate"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo]]
@@ -177,7 +177,7 @@
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
                               files))))))
-  (testing "supports coordinates w/o version number, with managed coordinates, w/o group-id"
+  (testing "coordinate inherits version from managed coordinate using explicit/implicit group ids"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo]]
@@ -196,7 +196,7 @@
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
                               files))))))
-  (testing "supports coordinates w/nil version number, with managed coordinates"
+  (testing "coordinate with nil version inherits version from managed coordinate"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo nil]]
@@ -206,7 +206,7 @@
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
                               files))))))
-  (testing "supports coordinates w/nil version number and kwargs, with managed coordinates"
+  (testing "coordinate with nil version and kwargs inherits version from managed coordinate"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo2 nil :exclusions [demo/demo]]]
@@ -216,19 +216,19 @@
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
                               files))))))
-  (testing "error if missing version number w/o managed coordinates"
+  (testing "error if coordinate missing version number without a managed coordinate"
     (is (thrown-with-msg? IllegalArgumentException #"Provided artifact is missing a version: \[demo/demo\]"
                           (aether/resolve-dependencies
                            :repositories test-repo
                            :coordinates '[[demo/demo]]
                            :local-repo tmp-local-repo-dir))))
-  (testing "error if nil version number w/o managed coordinates"
+  (testing "error if coordinate has nil version number without managed coordinates"
     (is (thrown-with-msg? IllegalArgumentException #"Provided artifact is missing a version: \[demo/demo nil\]"
                           (aether/resolve-dependencies
                            :repositories test-repo
                            :coordinates '[[demo/demo nil]]
                            :local-repo tmp-local-repo-dir))))
-  (testing "coordinates version number overrides managed coordinates version"
+  (testing "coordinate version number overrides managed coordinates version"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo "1.0.0"]]
@@ -238,7 +238,7 @@
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
                               files))))))
-  (testing "managed coordinates version is honored for transitive deps"
+  (testing "managed coordinates version is applied to transitive deps"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo2 "1.0.0"]]
@@ -250,15 +250,98 @@
                               files))))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.1" "demo-1.0.1.jar"))
                               files))))))
-  (testing "scope is honored for transitive deps when using managed dependencies"
-    (let [deps (aether/resolve-dependencies
-                 :repositories test-repo
-                 :coordinates '[[demo/demo2 "1.0.0" :scope "test"]]
-                 :managed-coordinates '[[demo/demo "1.0.1"]]
-                 :local-repo tmp-local-repo-dir)]
-      (is (= '{[demo/demo2 "1.0.0" :scope "test"] #{[demo "1.0.1" :scope "test"]}
-               [demo "1.0.1" :scope "test"] nil}
-             deps))))
+  (testing "coordinate scope overrides managed coordinate scope"
+    (testing "coordinate has nil version"
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo nil :scope "test"]]
+                  :managed-coordinates '[[demo/demo "1.0.0"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= deps '{[demo "1.0.0" :scope "test"] nil}))))
+    (testing "coordinate overrides version"
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo "1.0.1" :scope "test"]]
+                  :managed-coordinates '[[demo/demo "1.0.0"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= deps '{[demo "1.0.1" :scope "test"] nil}))))
+    (testing "managed coordinate specifies scope"
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo "1.0.1" :scope "test"]]
+                  :managed-coordinates '[[demo/demo "1.0.0" :scope "provided"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= deps '{[demo "1.0.1" :scope "test"] nil})))
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo "1.0.1" :scope "provided"]]
+                  :managed-coordinates '[[demo/demo "1.0.0" :scope "test"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= deps '{[demo "1.0.1" :scope "provided"] nil})))))
+  (testing "coordinate transitive dep scope overrides unspecified managed-coordinate scope"
+    (testing "test overrides unspecified"
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo2 "1.0.0" :scope "test"]]
+                  :managed-coordinates '[[demo/demo "1.0.1"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= '{[demo/demo2 "1.0.0" :scope "test"] #{[demo "1.0.1" :scope "test"]}
+                 [demo "1.0.1" :scope "test"] nil}
+               deps)))
+      (testing "compile overrides unspecified"
+        (let [deps (aether/resolve-dependencies
+                    :repositories test-repo
+                    :coordinates '[[demo/demo2 "1.0.0" :scope "compile"]]
+                    :managed-coordinates '[[demo/demo "1.0.1"]]
+                    :local-repo tmp-local-repo-dir)]
+          (is (= '{[demo/demo2 "1.0.0"] #{[demo "1.0.1"]}
+                   [demo "1.0.1"] nil}
+                 deps))))
+      (testing "implicit compile is effectively compile"
+        (let [deps (aether/resolve-dependencies
+                    :repositories test-repo
+                    :coordinates '[[demo/demo2 "1.0.0"]]
+                    :managed-coordinates '[[demo/demo "1.0.1"]]
+                    :local-repo tmp-local-repo-dir)]
+          (is (= '{[demo/demo2 "1.0.0"] #{[demo "1.0.1"]}
+                   [demo "1.0.1"] nil}
+                 deps)))))
+    (testing "compile does not override specified test"
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo2 "1.0.0" :scope "compile"]]
+                  :managed-coordinates '[[demo/demo "1.0.1" :scope "test"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= '{[demo/demo2 "1.0.0"] #{[demo "1.0.1" :scope "test"]}
+                 [demo "1.0.1" :scope "test"] nil}
+               deps))))
+    (testing "unspecified (effectively compile) does not override specified test"
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo2 "1.0.0"]]
+                  :managed-coordinates '[[demo/demo "1.0.1" :scope "test"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= '{[demo/demo2 "1.0.0"] #{[demo "1.0.1" :scope "test"]}
+                 [demo "1.0.1" :scope "test"] nil}
+               deps))))
+    (testing "provided does not override specified test"
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo2 "1.0.0" :scope "provided"]]
+                  :managed-coordinates '[[demo/demo "1.0.1" :scope "test"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= '{[demo/demo2 "1.0.0" :scope "provided"] #{[demo "1.0.1" :scope "test"]}
+                 [demo "1.0.1" :scope "test"] nil}
+               deps))))
+    (testing "test does not override specified provided"
+      (let [deps (aether/resolve-dependencies
+                  :repositories test-repo
+                  :coordinates '[[demo/demo2 "1.0.0" :scope "test"]]
+                  :managed-coordinates '[[demo/demo "1.0.1" :scope "provided"]]
+                  :local-repo tmp-local-repo-dir)]
+        (is (= '{[demo/demo2 "1.0.0" :scope "test"] #{[demo "1.0.1" :scope "provided"]}
+                 [demo "1.0.1" :scope "provided"] nil}
+               deps)))))
   (testing "unused entries in managed coordinates are not resolved"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
@@ -270,7 +353,7 @@
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo" "1.0.0" "demo-1.0.0.jar"))
                               files))))))
-  (testing "exclusions in managed coordinates are honored"
+  (testing "exclusions in managed coordinates are inherited"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo2]]
@@ -280,7 +363,7 @@
       (is (= 1 (count files)))
       (is (= 1 (count (filter #(file-path-eq % (io/file tmp-dir "local-repo" "demo" "demo2" "1.0.0" "demo2-1.0.0.jar"))
                               files))))))
-  (testing "classifiers in managed coordinates are honored"
+  (testing "classifiers in managed coordinates are inherited"
     (let [deps (aether/resolve-dependencies
                 :repositories test-repo
                 :coordinates '[[demo/demo]
@@ -659,5 +742,5 @@
   "tests needed for:
   repository authentication
   repository policies
-  dependency options (scope/optional)
+  dependency options (optional)
   exclusion options (classifier/extension)")

@@ -13,6 +13,10 @@ A release with known breaking changes is marked with:
 //   (adjust these in publish.clj as you see fit)
 == Unreleased
 
+* Fix: Default scope for managed dependencies should not be hard-coded to `compile`
+(https://github.com/clj-commons/pomegranate/issues/125[#125])
+(https://github.com/marcobiscaro2112[@marcobiscaro2112])
+
 == v1.2.23 - 2023-02-13 [[v1.2.23]]
 
 * Bump stale deps, some of which had vulnerabilities
