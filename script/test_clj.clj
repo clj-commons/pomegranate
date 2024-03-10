@@ -6,7 +6,7 @@
 
 (defn -main [& args]
   (let [old-clojure-versions ["1.4" "1.5" "1.6" "1.7"]
-        all-clojure-versions (concat old-clojure-versions ["1.8" "1.9" "1.10" "1.11"])
+        all-clojure-versions (concat old-clojure-versions ["1.8" "1.9" "1.10" "1.11" "1.12"])
         default-version (first all-clojure-versions)
         valid-clj-version-opt-values (conj all-clojure-versions ":all")
         all-suites [:unit :isolated]
