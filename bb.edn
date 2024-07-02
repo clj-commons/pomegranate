@@ -37,14 +37,11 @@
                   (status/line :warn "Do be sure there is a good reason to ugprade org.apache.maven.* deps") )}
          nvd-scan
          {:doc "Check for security vulnerabilities in dependencies"
-          :task (let [config (if (System/getenv "CI")
-                               "./github_actions_config.json" ;; to support CI caching
-                               "./local_config.json")]
-                  (status/line :detail "Using config: %s" config)
+          :task (let [cp (with-out-str (clojure "-Spath"))]
                   (clojure {:dir "./nvd_check_helper_project"}
                            "-J-Dclojure.main.report=stderr -M -m nvd.task.check"
-                           config
-                           (with-out-str (clojure "-Spath"))))}
+                           "./config.json"
+                           cp))}
          pubcheck
          {:doc "Run only publish checks (without publishing)"
           :task publish/pubcheck}
