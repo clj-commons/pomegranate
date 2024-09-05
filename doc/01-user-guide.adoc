@@ -27,7 +27,7 @@ If Pomegranate is not your cup of tea, consider having a look at:
 Like Pomegranate, Clojure's tools.deps resolves dependencies using the Maven Artifact Resolver.
 Unlike Pomegranate, by design, it is focused on runtime dependencies only.
 +
-Clojure v1.12, in beta at the time of this writing, includes support for https://clojure.org/news/2023/04/14/clojure-1-12-alpha2#_add_libraries_for_interactive_use[adding libraries at runtime].
+Clojure v1.12, includes support for https://github.com/clojure/clojure/blob/master/changes.md#21-add-libraries-for-interactive-use[adding libraries at runtime].
 * https://github.com/borkdude/deps.add-lib[borkdude/deps.add-lib]
 +
 Clojure v1.12's add-lib feature for leiningen and/or other environments without a specific version of the clojure CLI
