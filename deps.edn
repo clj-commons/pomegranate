@@ -53,21 +53,21 @@
                                         {:git/sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}
 
            :build {:extra-paths ["build"]
-                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.5"}
+                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.6"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}
 
            ;; for consistent linting we use a specific version of clj-kondo through the jvm
-           :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2024.09.27"}}
-                       :override-deps {org.clojure/clojure {:mvn/version "1.11.4"}}
+           :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2024.11.14"}}
+                       :override-deps {org.clojure/clojure {:mvn/version "1.12.0"}}
                        :main-opts ["-m" "clj-kondo.main"]}
            :eastwood {:main-opts  ["-m" "eastwood.lint" {:exclude-namespaces [cognitect.test-runner]
                                                          :ignored-faults {:local-shadows-var {cemerick.pomegranate.aether true}}}]
-                      :override-deps {org.clojure/clojure {:mvn/version "1.11.4"}}
+                      :override-deps {org.clojure/clojure {:mvn/version "1.12.0"}}
                       :extra-deps {jonase/eastwood {:mvn/version "1.4.3"}}}
 
-           :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.10.1241"}
-                                   org.clojure/clojure {:mvn/version "1.11.4"}
+           :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.11.1250"}
+                                   org.clojure/clojure {:mvn/version "1.12.0"}
                                    org.slf4j/slf4j-simple {:mvn/version "2.0.16"} ;; to rid ourselves of logger warnings
                                    }
                       :main-opts ["-m" "antq.core"]}}}

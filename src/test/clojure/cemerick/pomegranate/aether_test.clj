@@ -28,7 +28,7 @@
     (doseq [file (.listFiles file)]
       (delete-recursive file)))
   (when (not (.delete file))
-    (throw (ex-info (str "failed to delete: " (str file)) {}))))
+    (throw (ex-info (str "failed to delete: " file) {}))))
 
 (defn- clear-tmp
   [f]
