@@ -30,7 +30,7 @@ runs:
         java-version: ${{ inputs.jdk }}
 
     - name: Install Clojure Tools
-      uses: DeLaGuardo/setup-clojure@13.0
+      uses: DeLaGuardo/setup-clojure@13.1
       with:
         cli: 'latest'
         bb: 'latest'
