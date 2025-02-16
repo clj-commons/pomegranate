@@ -53,7 +53,7 @@
                                         {:git/sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}
 
            :build {:extra-paths ["build"]
-                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.6"}
+                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.7"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}
 
