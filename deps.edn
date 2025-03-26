@@ -39,7 +39,7 @@
 
            :test {:extra-paths ["src/test/clojure"]
                   :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
-                               org.slf4j/slf4j-simple {:mvn/version "2.0.16"}}
+                               org.slf4j/slf4j-simple {:mvn/version "2.0.17"}}
                   :main-opts ["-m" "cognitect.test-runner" "-d" "src/test/clojure"]}
            ;; some tests affect classloaders and classpaths, we run them separately to not pollute jvm state
            ;; ex usage: clojure -M:1.10:test:isolated
@@ -53,12 +53,12 @@
                                         {:git/sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}
 
            :build {:extra-paths ["build"]
-                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.7"}
+                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.8"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}
 
            ;; for consistent linting we use a specific version of clj-kondo through the jvm
-           :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2025.01.16"}}
+           :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2025.02.20"}}
                        :override-deps {org.clojure/clojure {:mvn/version "1.12.0"}}
                        :main-opts ["-m" "clj-kondo.main"]}
            :eastwood {:main-opts  ["-m" "eastwood.lint" {:exclude-namespaces [cognitect.test-runner]
@@ -66,8 +66,8 @@
                       :override-deps {org.clojure/clojure {:mvn/version "1.12.0"}}
                       :extra-deps {jonase/eastwood {:mvn/version "1.4.3"}}}
 
-           :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.11.1264"}
+           :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.11.1276"}
                                    org.clojure/clojure {:mvn/version "1.12.0"}
-                                   org.slf4j/slf4j-simple {:mvn/version "2.0.16"} ;; to rid ourselves of logger warnings
+                                   org.slf4j/slf4j-simple {:mvn/version "2.0.17"} ;; to rid ourselves of logger warnings
                                    }
                       :main-opts ["-m" "antq.core"]}}}
