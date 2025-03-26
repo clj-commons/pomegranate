@@ -33,7 +33,7 @@ jobs:
       - name: Setup
         uses: ./.github/workflows/shared-setup
         with:
-          jdk: '11'
+          jdk: '24'
 
       - name: Lint
         run: bb lint-eastwood
