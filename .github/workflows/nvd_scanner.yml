@@ -28,12 +28,15 @@ jobs:
         bb: 'latest'
 
     - name: Generate Cache Key File
-      # go with bash instead of bb, we have not downloaded our deps yet
       run: |
-        curl --fail -s \
-          https://clojars.org/api/artifacts/nvd-clojure | \
-          jq ".latest_release" | \
-          tee nvd_check_helper_project/nvd-clojure-version.txt
+        # We are using RELEASE for deps, grab current versions for CI cache key
+        mkdir -p target
+        VERSION_NVD_CLOJURE=$(curl -s --fail https://clojars.org/api/artifacts/nvd-clojure/nvd-clojure | jq -r '.recent_versions[0].version')
+        VERSION_DEPENDENCY_CHECK=$(curl -s --fail 'https://search.maven.org/solrsearch/select?q=g:org.owasp+AND+a:dependency-check-core&core=gav&rows=1&wt=json' | jq '.response.docs[0].v')
+        echo "nvd-clojure=${VERSION_NVD_CLOJURE}" > target/ci-versions.txt
+        echo "dependency-check=${VERSION_DEPENDENCY_CHECK}" >> target/ci-versions.txt
+        cat target/ci-versions.txt
+      working-directory: nvd_check_helper_project
 
     - name: Restore NVD DB & Clojure Deps Cache
       # nvd caches its db under ~/.m2/repository/org/owasp so that it can
@@ -48,7 +51,7 @@ jobs:
         # we also include its version
         key: |
           nvd-${{ hashFiles(
-            'nvd_check_helper_project/nvd-clojure-version.txt',
+            'nvd_check_helper_project/target/ci-versions.txt',
             'nvd_check_helper_project/deps.edn',
             'nvd_check_helper_project/bb.edn',
             'bb.edn') }}
@@ -76,7 +79,7 @@ jobs:
         # the next cache restore will find the best (and most current) match
         key: |
           nvd-${{ hashFiles(
-            'nvd_check_helper_project/nvd-clojure-version.txt',
+            'nvd_check_helper_project/target/ci-versions.txt',
             'nvd_check_helper_project/deps.edn',
             'nvd_check_helper_project/bb.edn',
             'bb.edn') }}-${{ github.run_id }}
