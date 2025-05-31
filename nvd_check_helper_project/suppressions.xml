@@ -30,4 +30,12 @@
     ]]></notes>
     <cve>CVE-2017-20189</cve>
   </suppress>
+  <suppress>
+    <notes><![CDATA[
+    We specify Clojure 1.4 as our minimum supported version of Clojure.
+    This CVE is described as: An issue in Clojure versions 1.20 to 1.12.0-alpha5 allows an attacker to cause a denial of service (DoS) via the clojure.core$partial$fn__5920 function.
+    We'll suppress this one and expect users of pomegranate to vet using old versions of Clojure.
+    ]]></notes>
+    <cve>CVE-2024-22871</cve>
+  </suppress>
 </suppressions>
