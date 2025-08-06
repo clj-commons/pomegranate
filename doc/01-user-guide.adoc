@@ -2,7 +2,7 @@
 :toclevels: 5
 :toc:
 // DO NOT EDIT: the lib-version parameter is automatically updated by bb publish
-:lib-version: 1.2.24
+:lib-version: 1.2.25
 
 == Audience
 You want to learn more about how to use the Pomegranate library from your app or library.
