@@ -57,12 +57,12 @@
                                         {:git/sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}
 
            :build {:extra-paths ["build"]
-                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.9"}
+                   :deps {io.github.clojure/tools.build {:mvn/version "0.10.10"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}
 
            ;; for consistent linting we use a specific version of clj-kondo through the jvm
-           :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2025.06.05"}}
+           :clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2025.07.28"}}
                        :override-deps {org.clojure/clojure {:mvn/version "1.12.1"}}
                        :main-opts ["-m" "clj-kondo.main"]}
            :eastwood {:main-opts  ["-m" "eastwood.lint" {:exclude-namespaces [cognitect.test-runner]
