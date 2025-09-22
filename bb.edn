@@ -33,7 +33,7 @@
          outdated
          {:doc "Report on outdated dependencies"
           :task (do
-                  (clojure {:continue true} "-M:outdated --directory=.:nvd_check_helper_project")
+                  (clojure {:continue true} "-M:outdated")
                   (status/line :warn "Do be sure there is a good reason to ugprade org.apache.maven.* deps") )}
          nvd-scan
          {:doc "Check for security vulnerabilities in dependencies"
