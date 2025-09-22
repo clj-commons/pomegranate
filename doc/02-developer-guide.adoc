@@ -110,16 +110,22 @@ $ bb lint-eastwood
 
 To run both: `bb lint`
 
+[[nvd-scan]]
 === Vulnerability scanning
 We automatically scan for vulnerabilities in our dependencies on CI.
 If you want to run this work locally, you can for example:
 
 [source,shell]
 ----
-$ NVD_API_TOKEN=your-token-here bb nvd-scan
+CLJ_WATSON_NVD_API_KEY=<your-nvd-token-here> \
+  CLJ_WATSON_ANALYZER_OSSINDEX_USER=<your-ossindex-user-here> \
+  CLJ_WATSON_ANALYZER_OSSINDEX_PASSWORD=<your-ossindex-password-here> \
+  bb nvd-scan
 ----
 
-Replace `your-token-here` with your personal nvd api token which you can easily request from https://nvd.nist.gov/developers/request-an-api-key.
+Replace `<your-nvd-token-here>` with your personal nvd api token which you can easily request from https://nvd.nist.gov/developers/request-an-api-key.
+
+Replace `<your-ossindex-user-here>` and `<your-ossindex-password-here>` with your ossindex credentials which you can create from https://ossindex.sonatype.org/user/register.
 
 === Outdated Deps
 You can check for outdated dependencies via:

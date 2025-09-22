@@ -1,3 +1,0 @@
-{:delete-config? false
- :nvd {:nvd-api {:max-retry-count 30}}
- :suppression-file "./suppressions.xml"}

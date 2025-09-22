@@ -28,15 +28,10 @@ jobs:
         bb: 'latest'
 
     - name: Generate Cache Key File
-      run: |
-        # We are using RELEASE for deps, grab current versions for CI cache key
-        mkdir -p target
-        VERSION_NVD_CLOJURE=$(curl -s --fail https://clojars.org/api/artifacts/nvd-clojure/nvd-clojure | jq -r '.recent_versions[0].version')
-        VERSION_DEPENDENCY_CHECK=$(curl -s --fail 'https://search.maven.org/solrsearch/select?q=g:org.owasp+AND+a:dependency-check-core&core=gav&rows=1&wt=json' | jq '.response.docs[0].v')
-        echo "nvd-clojure=${VERSION_NVD_CLOJURE}" > target/ci-versions.txt
-        echo "dependency-check=${VERSION_DEPENDENCY_CHECK}" >> target/ci-versions.txt
-        cat target/ci-versions.txt
-      working-directory: nvd_check_helper_project
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./ci-versions.sh
+      working-directory: nvd-scan
 
     - name: Restore NVD DB & Clojure Deps Cache
       # nvd caches its db under ~/.m2/repository/org/owasp so that it can
@@ -51,20 +46,17 @@ jobs:
         # we also include its version
         key: |
           nvd-${{ hashFiles(
-            'nvd_check_helper_project/target/ci-versions.txt',
-            'nvd_check_helper_project/deps.edn',
-            'nvd_check_helper_project/bb.edn',
-            'bb.edn') }}
+            'nvd-scan/target/ci-versions.txt',
+            'nvd-scan/*',
+            '!nvd-scan/.*') }}
         restore-keys: |
           nvd-
 
-    - name: Download Clojure deps
-      run: clojure -X:deps prep
-      working-directory: nvd_check_helper_project
-
     - name: Run NVD Scanner
       env:
-        NVD_API_TOKEN: ${{ secrets.NVD_API_TOKEN }}
+        CLJ_WATSON_NVD_API_KEY: ${{ secrets.CLJ_WATSON_NVD_API_KEY }}
+        CLJ_WATSON_ANALYZER_OSSINDEX_USER: ${{ secrets.CLJ_WATSON_ANALYZER_OSSINDEX_USER }}
+        CLJ_WATSON_ANALYZER_OSSINDEX_PASSWORD: ${{ secrets.CLJ_WATSON_ANALYZER_OSSINDEX_PASSWORD }}
       run: bb nvd-scan
 
     - name: Save NVD DB & Clojure Deps Cache
@@ -79,7 +71,6 @@ jobs:
         # the next cache restore will find the best (and most current) match
         key: |
           nvd-${{ hashFiles(
-            'nvd_check_helper_project/target/ci-versions.txt',
-            'nvd_check_helper_project/deps.edn',
-            'nvd_check_helper_project/bb.edn',
-            'bb.edn') }}-${{ github.run_id }}
+            'nvd-scan/target/ci-versions.txt',
+            'nvd-scan/*',
+            '!nvd-scan/.*')}}-${{ github.run_id }}
