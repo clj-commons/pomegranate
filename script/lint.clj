@@ -38,7 +38,7 @@
                             "Cache not found"
 
                             :else
-                            (let [updated-dep-files (fs/modified-since clj-kondo-cache ["deps.edn" "bb.edn" "nvd_check_helper_project/deps.edn"])]
+                            (let [updated-dep-files (fs/modified-since clj-kondo-cache ["deps.edn" "bb.edn" "nvd-scan/bb.edn"])]
                               (when (seq updated-dep-files)
                                 (format "Found deps files newer than lint cache: %s" (mapv str updated-dep-files)))))]
     (do (status/line :detail rebuild-reason)
@@ -50,7 +50,7 @@
   (status/line :head "clj-kondo: linting")
   (let [{:keys [exit]}
         (t/clojure {:continue true}
-                   "-M:clj-kondo --lint src script deps.edn bb.edn nvd_check_helper_project/deps.edn")]
+                   "-M:clj-kondo --lint src script deps.edn bb.edn nvd-scan/bb.edn")]
     (cond
       (= 2 exit) (status/die exit "clj-kondo found one or more lint errors")
       (= 3 exit) (status/die exit "clj-kondo found one or more lint warnings")
