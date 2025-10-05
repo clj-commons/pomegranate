@@ -33,7 +33,7 @@ jobs:
       - name: Setup
         uses: ./.github/workflows/shared-setup
         with:
-          jdk: '24'
+          jdk: '25'
 
       - name: Lint
         run: bb lint-eastwood
@@ -44,7 +44,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [{name: 'windows', shell: 'pwsh'}, {name: 'ubuntu', shell: 'bash'}]
-        jdk: ['8', '11', '17', '21', '24']
+        jdk: ['8', '11', '17', '21', '25']
 
     name: ${{matrix.os.name}} - jdk ${{ matrix.jdk }}
 
