@@ -13,6 +13,10 @@ A release with known breaking changes is marked with:
 //   (adjust these in publish.clj as you see fit)
 == Unreleased
 
+* Fix scm connection urls in pomegranate's pom
+(https://github.com/clj-commons/pomegranate/pull/229[#229])
+(https://github.com/frenchy64[@frenchy64])
+
 == v1.2.25 - 2025-08-06 [[v1.2.25]]
 
 * Override maven dep of `org.apache.commons/commons-lang3` to address CVE-2025-48924
