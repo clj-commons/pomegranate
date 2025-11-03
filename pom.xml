@@ -21,7 +21,7 @@
   <scm>
     <url>https://github.com/clj-commons/pomegranate</url>
     <connection>scm:git:git://github.com/clj-commons/pomegranate.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/clj-commons/pomegranate.git</developerConnection>
+    <developerConnection>scm:git:ssh://git@github.com:clj-commons/pomegranate.git</developerConnection>
   </scm>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
