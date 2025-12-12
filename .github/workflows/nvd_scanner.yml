@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Setup Java
       uses: actions/setup-java@v5
@@ -36,7 +36,7 @@ jobs:
     - name: Restore NVD DB & Clojure Deps Cache
       # nvd caches its db under ~/.m2/repository/org/owasp so that it can
       # conveniently be cached with deps
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: |
           ~/.m2/repository
@@ -61,7 +61,7 @@ jobs:
 
     - name: Save NVD DB & Clojure Deps Cache
       if: always() # always cache regardless of outcome of nvd scan
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: |
           ~/.m2/repository
