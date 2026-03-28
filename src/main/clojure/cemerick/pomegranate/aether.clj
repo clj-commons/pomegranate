@@ -6,6 +6,7 @@
             [clojure.string :as str]
             [clojure.stacktrace :as stacktrace])
   (:import (org.eclipse.aether RepositorySystem RepositorySystemSession DefaultRepositorySystemSession)
+           (org.eclipse.aether.transport.http HttpTransporterFactory)
            (org.eclipse.aether.transport.wagon WagonTransporterFactory
                                                WagonProvider)
            (org.eclipse.aether.transport.file FileTransporterFactory)
@@ -115,9 +116,10 @@
                           (stacktrace/print-cause-trace e)))]
     (.getService
      (doto (MavenRepositorySystemUtils/newServiceLocator)
-       (.setService TransporterFactory WagonTransporterFactory)
+       (.setService TransporterFactory HttpTransporterFactory)
        (.setService WagonProvider PomegranateWagonProvider)
        (.addService RepositoryConnectorFactory BasicRepositoryConnectorFactory)
+       (.addService TransporterFactory WagonTransporterFactory)
        (.addService TransporterFactory FileTransporterFactory)
        (.setErrorHandler error-handler))
      RepositorySystem)))
