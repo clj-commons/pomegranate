@@ -79,7 +79,8 @@
                        :override-deps {org.clojure/clojure {:mvn/version "1.12.2"}}
                        :main-opts ["-m" "clj-kondo.main"]}
            :eastwood {:main-opts  ["-m" "eastwood.lint" {:exclude-namespaces [cognitect.test-runner]
-                                                         :ignored-faults {:local-shadows-var {cemerick.pomegranate.aether true}}}]
+                                                         :ignored-faults {:deprecations {cemerick.pomegranate.aether {:line 128}}
+                                                                          :local-shadows-var {cemerick.pomegranate.aether true}}}]
                       :override-deps {org.clojure/clojure {:mvn/version "1.12.2"}}
                       :extra-deps {jonase/eastwood {:mvn/version "1.4.3"}}}
 
