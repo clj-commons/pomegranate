@@ -16,9 +16,16 @@
         org.apache.maven.wagon/wagon-http {:mvn/version "3.5.3"}
         org.apache.maven.wagon/wagon-ssh {:mvn/version "3.5.3"}
 
-        ;; override dep brought in by org.apache.maven.resolver/maven-resolver-impl
+        ;; override commons-lang3 dep brought in by org.apache.maven.resolver/maven-resolver-impl
         ;; to address CVE-2025-48924
         org.apache.commons/commons-lang3 {:mvn/version "3.18.0"}
+
+        ;; override plexus-utils dep brought in by various maven deps
+        ;; to address CVE-2025-67030
+        org.codehaus.plexus/plexus-utils {:mvn/version "4.0.3"}
+        ;; plexus-utils v4.x factored out plexus-xml as an optional dep
+        ;; use v3.x of plexus-xml as per plexus-utils, "to keep maven 3 compatability"
+        org.codehaus.plexus/plexus-xml {:mvn/version "3.0.1"}
 
         org.tcrawley/dynapath {:mvn/version "1.1.0"}
         org.apache.httpcomponents/httpclient {:mvn/version "4.5.14"}
