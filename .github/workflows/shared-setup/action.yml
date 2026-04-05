@@ -26,11 +26,11 @@ runs:
     - name: Setup Java
       uses: actions/setup-java@v5
       with:
-        distribution: 'temurin'
+        distribution: 'zulu'
         java-version: ${{ inputs.jdk }}
 
     - name: Install Clojure Tools
-      uses: DeLaGuardo/setup-clojure@13.5.2
+      uses: DeLaGuardo/setup-clojure@13.6.0
       with:
         cli: 'latest'
         bb: 'latest'
