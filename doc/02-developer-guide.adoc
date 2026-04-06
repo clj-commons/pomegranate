@@ -127,6 +127,18 @@ Replace `<your-nvd-token-here>` with your personal nvd api token which you can e
 
 Replace `<your-ossindex-user-here>` and `<your-ossindex-password-here>` with your ossindex credentials which you can create from https://ossindex.sonatype.org/user/register.
 
+=== Unused Deps
+Pomegranate should only be including deps that are needed.
+Check for unused deps via:
+
+[source.shell]
+----
+$ bb unused-dep
+----
+
+Some deps are not directly called from code but are still needed.
+Adjust explanations for these deps in `bb.edn` under `unused-deps` task.
+
 === Outdated Deps
 You can check for outdated dependencies via:
 
