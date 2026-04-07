@@ -11,8 +11,7 @@
         org.apache.maven.resolver/maven-resolver-transport-http {:mvn/version "1.9.4"}
         org.apache.maven.resolver/maven-resolver-transport-wagon {:mvn/version "1.9.4"}
         org.apache.maven.resolver/maven-resolver-connector-basic {:mvn/version "1.9.4"}
-        org.apache.maven.wagon/wagon-provider-api {:mvn/version "3.5.3"
-                                                   :exclusions [org.codehaus.plexus/plexus-utils]}
+        org.apache.maven.wagon/wagon-provider-api {:mvn/version "3.5.3"}
         org.apache.maven.wagon/wagon-http {:mvn/version "3.5.3"}
         org.apache.maven.wagon/wagon-ssh {:mvn/version "3.5.3"}
 
@@ -27,9 +26,7 @@
         ;; use v3.x of plexus-xml as per plexus-utils, "to keep maven 3 compatability"
         org.codehaus.plexus/plexus-xml {:mvn/version "3.0.1"}
 
-        org.tcrawley/dynapath {:mvn/version "1.1.0"}
-        org.apache.httpcomponents/httpclient {:mvn/version "4.5.14"}
-        org.apache.httpcomponents/httpcore {:mvn/version "4.4.16"}}
+        org.tcrawley/dynapath {:mvn/version "1.1.0"}}
 
  :aliases {;; we use babashka/neil for project attributes
            ;; publish workflow references these values (and automatically bumps patch component of version)
