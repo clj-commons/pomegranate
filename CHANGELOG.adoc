@@ -18,7 +18,8 @@ A release with known breaking changes is marked with:
 (https://github.com/clj-commons/pomegranate/issues/234[#234])
 (https://github.com/lread[@lread])
 * Review dependencies, remove redundant, explain unreferenced by code
-(https://github.com/clj-commons/pomegranate/issues/237[#237])
+(https://github.com/clj-commons/pomegranate/issues/237[#237]),
+(https://github.com/clj-commons/pomegranate/issues/239[#239])
 (https://github.com/lread[@lread])
 * Fix scm connection urls in pomegranate's pom
 (https://github.com/clj-commons/pomegranate/pull/229[#229])
