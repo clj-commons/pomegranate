@@ -28,7 +28,8 @@
            (org.eclipse.aether.util.version GenericVersionScheme)
            (org.eclipse.aether.connector.basic BasicRepositoryConnectorFactory)
            (org.eclipse.aether.impl DefaultServiceLocator$ErrorHandler)
-           (org.apache.maven.repository.internal MavenRepositorySystemUtils)))
+           (org.apache.maven.repository.internal MavenRepositorySystemUtils)
+           (org.apache.maven.wagon.providers.http HttpWagon)))
 
 (def ^{:private true} default-local-repo
   (io/file (System/getProperty "user.home") ".m2" "repository"))
@@ -40,7 +41,7 @@
 (def ^{:private true} wagon-factories
   ;; there were issues with the HTTP lightweight Wagon (now deprecated by Maven),
   ;; so we match the Maven tool itself and use HttpWagon.
-  (atom {"https" #(org.apache.maven.wagon.providers.http.HttpWagon.)
+  (atom {"https" #(HttpWagon.)
          "http" #(throw (Exception. "Tried to use insecure HTTP repository."))}))
 
 (defn register-wagon-factory!

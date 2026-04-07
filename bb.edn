@@ -42,13 +42,9 @@
           :requires ([clj-commons.format.table :as table])
           :task (let [;; manually update explanations as needed
                       explanations {'commons-logging/commons-logging  "ikcy but: legacy dep still included to avoid breaking existing apps that depend on it transitively"
-                                    'org.apache.maven.resolver/maven-resolver-transport-http "UNSURE: Might be runtime dep in some scenarios?"
                                     'org.apache.commons/commons-lang3 "brought in by org.apache.maven.resolver/maven-resolver-impl, override to address CVE-2025-48924"
                                     'org.codehaus.plexus/plexus-utils "brought in by various maven deps, override to address CVE-2025-67030"
-                                    'org.codehaus.plexus/plexus-xml   "optional dep of plexus-utils must be explicitly included"
-                                    'org.apache.maven.wagon/wagon-provider-api "wagons are not explicitly referenced by code"
-                                    'org.apache.maven.wagon/wagon-http         "wagons are not explicitly referenced by code"
-                                    'org.apache.maven.wagon/wagon-ssh          "wagons are not explicitly referenced by code"}
+                                    'org.codehaus.plexus/plexus-xml   "optional dep of plexus-utils must be explicitly included"}
                       unused-deps (->> (exec 'borkdude.unused-deps/unused-deps
                                         {:source-paths ["src/main/clojure"]})
                                        :unused-deps
