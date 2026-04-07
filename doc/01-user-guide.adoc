@@ -43,6 +43,9 @@ It makes its first release under `clj-commons/pomegranate` to Clojars.
 
 == Installation
 
+NOTE: *Legacy Logging Dependency* Pomegranate includes a legacy dependency on `commons-logging/commons-logging` to avoid breaking existing applications that rely on it transitively.
+Modern applications should exclude this dependency (e.g., with `:exclusions [commons-logging/commons-logging]`) and instead add a bridge like `org.slf4j/jcl-over-slf4j` to delegate logging to SLF4J.
+
 === Leiningen `project.clj`
 
 [source,clojure,subs="attributes+"]
@@ -50,11 +53,24 @@ It makes its first release under `clj-commons/pomegranate` to Clojars.
 [clj-commons/pomegranate "{lib-version}"]
 ----
 
+For usage in a modern app, you should exlude `commons-logging` (see note above):
+[source,clojure,subs="attributes+"]
+----
+[clj-commons/pomegranate "{lib-version}" :exclusions [commons-logging/commons-logging]]
+----
+
 === Clojure CLI `deps.edn`
 
 [source,clojure,subs="attributes+"]
 ----
 clj-commons/pomegranate {:mvn/version "{lib-version}"}
+----
+
+For usage in a modern app, you should exlude `commons-logging` (see note above):
+
+[source,clojure,subs="attributes+"]
+----
+clj-commons/pomegranate {:mvn/version "{lib-version}" :exclusions [commons-logging/commons-loggin]}
 ----
 
 === As a Git Dependency
@@ -69,6 +85,8 @@ $ cat deps.edn
 ----
 
 Replace the `:git/sha` value as appropriate.
+
+For usage in a modern app, you should exclude `commons-logging`, see `deps.edn` example above.
 
 == Usage
 
