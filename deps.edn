@@ -39,7 +39,7 @@
 
  :aliases { ;; we use babashka/neil for project attributes
            ;; publish workflow references these values (and automatically bumps patch component of version)
-           :neil {:project {:version "1.3.25"
+           :neil {:project {:version "1.3.26"
                             ;; artifact deploy name (and also, by chance, GitHub coordinates)
                             :name clj-commons/pomegranate}}
 
