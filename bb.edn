@@ -44,7 +44,8 @@
                       explanations {'commons-logging/commons-logging  "ikcy but: legacy dep still included to avoid breaking existing apps that depend on it transitively"
                                     'org.apache.commons/commons-lang3 "brought in by org.apache.maven.resolver/maven-resolver-impl, override to address CVE-2025-48924"
                                     'org.codehaus.plexus/plexus-utils "brought in by various maven deps, override to address CVE-2025-67030"
-                                    'org.codehaus.plexus/plexus-xml   "optional dep of plexus-utils must be explicitly included"}
+                                    'org.codehaus.plexus/plexus-xml   "optional dep of plexus-utils must be explicitly included"
+                                    'org.apache.maven.wagon/wagon-ssh "this wagon is not explicitly referenced by code, but removing it would be a breaking change for existing apps that depend on it transitively"}}
                       unused-deps (->> (exec 'borkdude.unused-deps/unused-deps
                                         {:source-paths ["src/main/clojure"]})
                                        :unused-deps

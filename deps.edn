@@ -18,7 +18,8 @@
         org.apache.maven.resolver/maven-resolver-connector-basic {:mvn/version "1.9.25"}
 
         org.apache.maven.wagon/wagon-http {:mvn/version "3.5.3"}
-
+        org.apache.maven.wagon/wagon-ssh {:mvn/version "3.5.3"}
+        
         ;; override commons-lang3 dep brought in by org.apache.maven.resolver/maven-resolver-impl
         ;; to address CVE-2025-48924
         org.apache.commons/commons-lang3 {:mvn/version "3.18.0"}
