@@ -6,6 +6,7 @@
             [clojure.string :as str]
             [clojure.stacktrace :as stacktrace])
   (:import (org.eclipse.aether RepositorySystem RepositorySystemSession DefaultRepositorySystemSession)
+           (org.eclipse.aether.transport.http HttpTransporterFactory)
            (org.eclipse.aether.transport.wagon WagonTransporterFactory
                                                WagonProvider)
            (org.eclipse.aether.transport.file FileTransporterFactory)
@@ -27,7 +28,8 @@
            (org.eclipse.aether.util.version GenericVersionScheme)
            (org.eclipse.aether.connector.basic BasicRepositoryConnectorFactory)
            (org.eclipse.aether.impl DefaultServiceLocator$ErrorHandler)
-           (org.apache.maven.repository.internal MavenRepositorySystemUtils)))
+           (org.apache.maven.repository.internal MavenRepositorySystemUtils)
+           (org.apache.maven.wagon.providers.http HttpWagon)))
 
 (def ^{:private true} default-local-repo
   (io/file (System/getProperty "user.home") ".m2" "repository"))
@@ -39,7 +41,7 @@
 (def ^{:private true} wagon-factories
   ;; there were issues with the HTTP lightweight Wagon (now deprecated by Maven),
   ;; so we match the Maven tool itself and use HttpWagon.
-  (atom {"https" #(org.apache.maven.wagon.providers.http.HttpWagon.)
+  (atom {"https" #(HttpWagon.)
          "http" #(throw (Exception. "Tried to use insecure HTTP repository."))}))
 
 (defn register-wagon-factory!
@@ -115,9 +117,10 @@
                           (stacktrace/print-cause-trace e)))]
     (.getService
      (doto (MavenRepositorySystemUtils/newServiceLocator)
-       (.setService TransporterFactory WagonTransporterFactory)
+       (.setService TransporterFactory HttpTransporterFactory)
        (.setService WagonProvider PomegranateWagonProvider)
        (.addService RepositoryConnectorFactory BasicRepositoryConnectorFactory)
+       (.addService TransporterFactory WagonTransporterFactory)
        (.addService TransporterFactory FileTransporterFactory)
        (.setErrorHandler error-handler))
      RepositorySystem)))
@@ -892,8 +895,8 @@
                (re-find (re-pattern (str "^" ver "-\\d+\\.\\d+-\\d+$"))
                         version)
                (let [gsv (GenericVersionScheme.)
-                     vc (.parseVersionConstraint gsv sversion)
-                     v (.parseVersion gsv version)]
+                     vc (.parseVersionConstraint gsv ^String sversion)
+                     v (.parseVersion gsv ^String version)]
                  (.containsVersion vc v)))))))
 
 (defn dependency-hierarchy

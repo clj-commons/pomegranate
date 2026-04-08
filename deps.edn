@@ -1,20 +1,25 @@
 {:paths ["src/main/clojure"]
  :deps {;; our current minimum supported Clojure version
         org.clojure/clojure {:mvn/version "1.4.0"}
+
         ;; TIP: be sure you really want to bump org.apache.maven deps
+        ;; Note that using 3.9.x of maven-resolver-provider will break dependency resolution
+        ;; for transitive deps of transitive deps for an unknown reason. 
         org.apache.maven/maven-resolver-provider {:mvn/version "3.8.7"}
-        org.apache.maven.resolver/maven-resolver-api {:mvn/version "1.9.4"}
-        org.apache.maven.resolver/maven-resolver-spi {:mvn/version "1.9.4"}
-        org.apache.maven.resolver/maven-resolver-util {:mvn/version "1.9.4"}
-        org.apache.maven.resolver/maven-resolver-impl {:mvn/version "1.9.4"}
-        org.apache.maven.resolver/maven-resolver-transport-file {:mvn/version "1.9.4"}
-        org.apache.maven.resolver/maven-resolver-transport-http {:mvn/version "1.9.4"}
-        org.apache.maven.resolver/maven-resolver-transport-wagon {:mvn/version "1.9.4"}
-        org.apache.maven.resolver/maven-resolver-connector-basic {:mvn/version "1.9.4"}
-        org.apache.maven.wagon/wagon-provider-api {:mvn/version "3.5.3"}
+        org.apache.maven.resolver/maven-resolver-impl {:mvn/version "1.9.25"}
+        org.apache.maven.resolver/maven-resolver-transport-file {:mvn/version "1.9.25"}
+        
+        org.apache.maven.resolver/maven-resolver-transport-http
+        {:mvn/version "1.9.25"
+         ;; Brought in via com.google.code.gson/gson, but not needed at runtime
+         :exclusions [com.google.errorprone/error_prone_annotations]}
+        
+        org.apache.maven.resolver/maven-resolver-transport-wagon {:mvn/version "1.9.25"}
+        org.apache.maven.resolver/maven-resolver-connector-basic {:mvn/version "1.9.25"}
+
         org.apache.maven.wagon/wagon-http {:mvn/version "3.5.3"}
         org.apache.maven.wagon/wagon-ssh {:mvn/version "3.5.3"}
-
+        
         ;; override commons-lang3 dep brought in by org.apache.maven.resolver/maven-resolver-impl
         ;; to address CVE-2025-48924
         org.apache.commons/commons-lang3 {:mvn/version "3.18.0"}
@@ -32,7 +37,7 @@
         ;; modern apps using pomegranate should exclude it and instead use a bridge like `jcl-over-slf4j`
         commons-logging/commons-logging {:mvn/version "1.3.6"}}
 
- :aliases {;; we use babashka/neil for project attributes
+ :aliases { ;; we use babashka/neil for project attributes
            ;; publish workflow references these values (and automatically bumps patch component of version)
            :neil {:project {:version "1.2.25"
                             ;; artifact deploy name (and also, by chance, GitHub coordinates)
