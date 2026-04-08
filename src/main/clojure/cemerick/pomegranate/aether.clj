@@ -116,16 +116,6 @@
                         (serviceCreationFailed [type-clazz impl-clazz ^Throwable e]
                           (stacktrace/print-cause-trace e)))]
     (.getService
-     ;; DefaultServiceLocator is deprecated. The javadocs for it state:
-     ;;
-     ;; > Use of out-of-the-box DI implementation recommended, or, as
-     ;; > alternative new supplier from module maven-resolver-supplier.
-     ;;
-     ;; The approach it is referring to is to extend
-     ;; https://github.com/apache/maven-resolver/blob/maven-resolver-1.9.27/maven-resolver-supplier/src/main/java/org/eclipse/aether/supplier/RepositorySystemSupplier.java
-     ;; with a subclass that overrides the appropriate methods. However, it uses
-     ;; a very different API from the ServiceLocator, so would be a significant
-     ;; change to support.
      (doto (MavenRepositorySystemUtils/newServiceLocator)
        (.setService TransporterFactory HttpTransporterFactory)
        (.setService WagonProvider PomegranateWagonProvider)
