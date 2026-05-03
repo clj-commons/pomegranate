@@ -9,10 +9,11 @@
  {:requires ([clojure.edn :as edn])
   :init (do (defn get-deps []
               (reduce (fn [acc lib]
-                        (let [coord (-> (clojure {:out :string} "-Sforce -X:deps"
-                                                 "find-versions"
-                                                 ":lib" lib
-                                                 ":n" 1)
+                       (let [coord (-> (clojure {:out :string}
+                                        "-Sdeps" "{:mvn/repos {\"central\" {:url \"https://repo1.maven.apache.org/maven2/\" :update :always}}}"
+                                        "-X:deps" "find-versions"
+                                        ":lib" lib
+                                        ":n" 1)
                                         :out
                                         edn/read-string)]
                           (assoc acc lib coord)))
