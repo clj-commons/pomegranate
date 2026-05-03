@@ -55,7 +55,6 @@ jobs:
     - name: Run NVD Scanner
       env:
         CLJ_WATSON_NVD_API_KEY: ${{ secrets.CLJ_WATSON_NVD_API_KEY }}
-        CLJ_WATSON_ANALYZER_OSSINDEX_USER: ${{ secrets.CLJ_WATSON_ANALYZER_OSSINDEX_USER }}
         CLJ_WATSON_ANALYZER_OSSINDEX_PASSWORD: ${{ secrets.CLJ_WATSON_ANALYZER_OSSINDEX_PASSWORD }}
       run: bb nvd-scan
 
