@@ -22,8 +22,7 @@
                  ["target"
                   ".cpcache"
                   ".clj-kondo/.cache"
-                  ".lsp/.cache"
-                  "nvd-scan/target"])}
+                  ".lsp/.cache"])}
          download-deps
          {:doc "bring down Clojure deps"
           :task download-deps/-main}

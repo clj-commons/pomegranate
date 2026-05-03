@@ -6,22 +6,37 @@
 ;; but for ci caching. We invalidate the cache only when nvd-scan related
 ;; things change.
 {:tasks
- {:requires ([clojure.edn :as edn])
-  :init (do (defn get-deps []
-              (reduce (fn [acc lib]
-                       (let [coord (-> (clojure {:out :string}
-                                        "-Sdeps" "{:mvn/local-repo \"target/temp-fresh-repo\"}"
-                                        "-X:deps" "find-versions"
-                                        ":lib" lib
-                                        ":n" 1)
-                                        :out
-                                        edn/read-string)]
-                          (assoc acc lib coord)))
-                      {}
-                      ['io.github.clj-holmes/clj-watson 'org.owasp/dependency-check-core])))
+ {:requires ([clojure.edn :as edn]
+             [clojure.string :as str]
+             [babashka.http-client :as http])
+  :init (do
+         (defn get-latest [lib]
+          (let [coord (-> (clojure {:out :string}
+                            "-X:deps" "find-versions"
+                            ":lib" lib 
+                            ":n" 1)
+                        :out
+                       edn/read-string)]
+           {lib coord}))
+
+         ;; using find-versions for maven deps can be stale on CI, so use maven metadata
+         (defn get-latest-maven [lib]
+          (let [[group artifact] (-> lib str (str/split (re-pattern "/")))
+                url (str "https://repo1.maven.org/maven2/"
+                     (str/replace group "." "/") "/" artifact "/maven-metadata.xml")
+                resp (-> (http/get url) :body)
+                release-match (re-find (re-pattern "<release>([^<]+)</release>") resp)]
+           (if-not release-match
+            (throw (ex-info "Unable to find release in maven metadata" {}))
+            {lib {:mvn/version (last release-match)}})))
+
+         (defn get-deps []
+          (merge
+           (get-latest 'io.github.clj-holmes/clj-watson)
+           (get-latest-maven 'org.owasp/dependency-check-core))))
   nvd-scan {:doc "run vulnerability scan"
             :task (let [deps {:deps (get-deps)}]
-                    (println "using latest:" deps)
+                    (println "using latest:" (pr-str deps))
                     (shell "clojure" "-Sdeps" (pr-str deps)
                            "-M" "-m" "clj-watson.cli"
                            "scan"
