@@ -13,9 +13,17 @@
 
          ;; tasks
          clean
-         {:doc "delete build work"
-          :task (when (fs/exists? "target")
-                  (fs/delete-tree "target"))}
+         {:doc "delete build work (d=deleted -=did not exist)"
+          :task (run! (fn [d]
+                       (println (format "[%s] %s"
+                                 (if (fs/exists? d) "d" "-")
+                                 d))
+                       (fs/delete-tree d {:force true}))
+                 ["target"
+                  ".cpcache"
+                  ".clj-kondo/.cache"
+                  ".lsp/.cache"
+                  "nvd-scan/target"])}
          download-deps
          {:doc "bring down Clojure deps"
           :task download-deps/-main}

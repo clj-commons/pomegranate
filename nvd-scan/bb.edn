@@ -10,7 +10,7 @@
   :init (do (defn get-deps []
               (reduce (fn [acc lib]
                        (let [coord (-> (clojure {:out :string}
-                                        "-Sdeps" "{:mvn/repos {\"central\" {:url \"https://repo1.maven.apache.org/maven2/\" :update :always}}}"
+                                        "-Sdeps" "{:mvn/local-repo \"target/temp-fresh-repo\"}"
                                         "-X:deps" "find-versions"
                                         ":lib" lib
                                         ":n" 1)
