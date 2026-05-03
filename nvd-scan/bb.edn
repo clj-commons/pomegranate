@@ -9,7 +9,7 @@
  {:requires ([clojure.edn :as edn])
   :init (do (defn get-deps []
               (reduce (fn [acc lib]
-                        (let [coord (-> (clojure {:out :string} "-X:deps"
+                        (let [coord (-> (clojure {:out :string} "-Sforce -X:deps"
                                                  "find-versions"
                                                  ":lib" lib
                                                  ":n" 1)
