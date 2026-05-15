@@ -94,21 +94,26 @@
                 :transfer-start-time (.getTransferStartTime r)
                 :trace (.getTrace r)})})
 
+(def ^:private stdout-print-lock (Object.))
+
 (defn- stdout-listener-fn
   [{:keys [type method _transferred resource error] :as _evt}]
   (let [{:keys [name size repository _transfer-start-time]} resource]
-    (case type
-      :started (do
-                 (print (case method :get "Retrieving" :put "Sending")
-                        name
-                        (if (neg? size)
-                          ""
-                          (format "(%sk)" (Math/round (double (max 1 (/ size 1024)))))))
-                 (when (< 70 (+ 10 (count name) (count repository)))
-                   (println) (print "    "))
-                 (println (case method :get "from" :put "to") repository))
-      (:corrupted :failed) (when error (println (.getMessage ^Exception error)))
-      nil)))
+    ;; Prevent interleaved output from multiple deploy threads from overwriting
+    ;; each other
+    (locking stdout-print-lock
+      (case type
+        :started (do
+                   (print (case method :get "Retrieving" :put "Sending")
+                          name
+                          (if (neg? size)
+                            ""
+                            (format "(%sk)" (Math/round (double (max 1 (/ size 1024)))))))
+                   (when (< 70 (+ 10 (count name) (count repository)))
+                     (println) (print "    "))
+                   (println (case method :get "from" :put "to") repository))
+        (:corrupted :failed) (when error (println (.getMessage ^Exception error)))
+        nil))))
 
 (defn- repository-system
   []
