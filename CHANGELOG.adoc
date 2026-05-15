@@ -13,10 +13,14 @@ A release with known breaking changes is marked with:
 //   (adjust these in publish.clj as you see fit)
 == Unreleased
 
+== v1.3.27 - 2026-05-15 [[v1.3.27]]
+
 * Serialize deploy output to prevent messages from being improperly interleaved.
 This is required now as the newer HttpTransporter uploads artifacts in parallel.
 (https://github.com/clj-commons/pomegranate/pull/243[#243])
 (https://github.com/tobias[@tobias])
+
+https://github.com/clj-commons/pomegranate/compare/v1.3.26\...v1.3.27[commit log]
 
 == v1.3.26 - 2026-04-08 [[v1.3.26]]
 
