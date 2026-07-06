@@ -56,7 +56,7 @@
 
            :test {:extra-paths ["src/test/clojure"]
                   :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}
-                               org.slf4j/slf4j-simple {:mvn/version "2.0.17"}}
+                               org.slf4j/slf4j-simple {:mvn/version "2.0.18"}}
                   :main-opts ["-m" "cognitect.test-runner" "-d" "src/test/clojure"]}
            ;; some tests affect classloaders and classpaths, we run them separately to not pollute jvm state
            ;; ex usage: clojure -M:1.10:test:isolated
@@ -85,6 +85,6 @@
 
            :outdated {:extra-deps {com.github.liquidz/antq {:mvn/version "2.11.1276"}
                                    org.clojure/clojure {:mvn/version "1.12.2"}
-                                   org.slf4j/slf4j-simple {:mvn/version "2.0.17"} ;; to rid ourselves of logger warnings
+                                   org.slf4j/slf4j-simple {:mvn/version "2.0.18"} ;; to rid ourselves of logger warnings
                                    }
                       :main-opts ["-m" "antq.core"]}}}
