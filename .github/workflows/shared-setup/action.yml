@@ -14,7 +14,7 @@ runs:
 
   steps:
     - name: Clojure deps cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: |
           ~/.m2/repository
@@ -30,7 +30,7 @@ runs:
         java-version: ${{ inputs.jdk }}
 
     - name: Install Clojure Tools
-      uses: DeLaGuardo/setup-clojure@13.6.0
+      uses: DeLaGuardo/setup-clojure@13.6.1
       with:
         cli: 'latest'
         bb: 'latest'
